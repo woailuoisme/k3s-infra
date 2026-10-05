@@ -1,0 +1,243 @@
+# ==============================================================================
+# Centrifugo v6 实时 WebSocket / SSE 广播引擎 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: centrifugo-config
+  namespace: messaging
+data:
+  config.yaml: |
+    websocket:
+      use_write_buffer_pool: true
+      message_size_limit: 65536
+    uni_websocket:
+      enabled: true
+    http_stream:
+      enabled: true
+    sse:
+      enabled: true
+    uni_sse:
+      enabled: true
+    engine:
+      type: redis
+      redis:
+        connect_timeout: "1s"
+        io_timeout: "4s"
+    client:
+      allow_anonymous_connect_without_token: false
+      ping_interval: 30s
+      pong_timeout: 8s
+      connection_limit: 10000
+      user_connection_limit: 10
+      queue_max_size: 1048576
+      stale_close_delay: "10s"
+    admin:
+      enabled: true
+      handler_prefix: "/admin"
+    health:
+      enabled: true
+    prometheus:
+      enabled: true
+    log:
+      level: info
+    channel:
+      history_meta_ttl: "720h"
+      namespaces:
+        # public: 公共大厅/广播场景，开启断线消息自动补偿，仅服务端发布
+        - name: public
+          presence: true
+          join_leave: true
+          history_size: 100
+          history_ttl: "300s"
+          allow_recovery: true
+          force_recovery: true
+          allow_publish_for_subscriber: false
+          allow_subscribe_for_client: true
+          allow_subscribe_for_anonymous: false
+          allow_publish_for_anonymous: false
+
+        # private: 私有与敏感业务频道，须凭订阅 Token 准入，禁用客户端直接 publish
+        - name: private
+          presence: true
+          join_leave: true
+          history_size: 50
+          history_ttl: "300s"
+          allow_recovery: true
+          force_recovery: true
+          allow_publish_for_subscriber: false
+          allow_subscribe_for_client: false
+
+        # user: 用户个人通知频道，关闭 presence 和 join_leave 节省存储与网络开销
+        - name: user
+          presence: false
+          join_leave: false
+          history_size: 50
+          history_ttl: "300s"
+          allow_recovery: true
+          force_recovery: true
+          allow_publish_for_subscriber: false
+          allow_subscribe_for_client: false
+
+        # notification: 瞬时消息/Toast 提醒，高吞吐量，关闭恢复以减轻 Valkey 压力
+        - name: notification
+          presence: false
+          join_leave: false
+          history_size: 10
+          history_ttl: "60s"
+          allow_recovery: false
+          force_recovery: false
+          allow_publish_for_subscriber: false
+          allow_subscribe_for_client: true
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: valkey-secret
+  namespace: messaging
+type: Opaque
+stringData:
+  password: "redis_secret"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: centrifugo-secrets
+  namespace: messaging
+type: Opaque
+stringData:
+  token-hmac-secret-key: "768583f3-7205-4b36-aea3-32ca8dea4914"
+  api-key: "aef5a17a-fdeb-48aa-b2c1-d490c62ff950"
+  admin-password: "wt+7nmavPSAGroho3w/9ew=="
+  admin-secret: "++WnV+LKf1vzZIfzMNqjbK/eb/DDqgnX42izczRWRqU="
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: centrifugo
+  namespace: messaging
+  labels:
+    app.kubernetes.io/name: centrifugo
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: centrifugo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: centrifugo
+    spec:
+      priorityClassName: platform-standard
+      containers:
+        - name: centrifugo
+          image: centrifugo/centrifugo:v6.9
+          imagePullPolicy: IfNotPresent
+          command:
+            - centrifugo
+            - -c
+            - /centrifugo/config.yaml
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: CENTRIFUGO_ENGINE_TYPE
+              value: "redis"
+            - name: CENTRIFUGO_ENGINE_REDIS_ADDRESS
+              value: "redis://:$(REDIS_PASSWORD)@valkey-primary.database.svc:6379/0"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: valkey-secret
+                  key: password
+                  optional: true
+            - name: CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: centrifugo-secrets
+                  key: token-hmac-secret-key
+                  optional: true
+            - name: CENTRIFUGO_HTTP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: centrifugo-secrets
+                  key: api-key
+                  optional: true
+            - name: CENTRIFUGO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: centrifugo-secrets
+                  key: admin-password
+                  optional: true
+            - name: CENTRIFUGO_ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: centrifugo-secrets
+                  key: admin-secret
+                  optional: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /centrifugo/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: centrifugo-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: centrifugo
+  namespace: messaging
+  labels:
+    app.kubernetes.io/name: centrifugo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: centrifugo
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: centrifugo
+  namespace: messaging
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`centrifugo.haoxiaoguai.xyz`)
+      kind: Rule
+      services:
+        - name: centrifugo
+          port: 8000
+  tls:
+    certResolver: cloudflare

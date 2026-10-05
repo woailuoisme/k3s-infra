@@ -1,0 +1,120 @@
+# ==============================================================================
+# Dozzle 极简云原生 Pod 日志与容器状态流式查看器 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dozzle
+  namespace: observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dozzle-viewer
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "namespaces", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dozzle-viewer-binding
+subjects:
+  - kind: ServiceAccount
+    name: dozzle
+    namespace: observability
+roleRef:
+  kind: ClusterRole
+  name: dozzle-viewer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dozzle
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: dozzle
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dozzle
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dozzle
+    spec:
+      priorityClassName: observability-low
+      serviceAccountName: dozzle
+      containers:
+        - name: dozzle
+          image: amir20/dozzle:v10
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DOZZLE_NO_ANALYTICS
+              value: "true"
+            - name: DOZZLE_MODE
+              value: "k8s"
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dozzle
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: dozzle
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: dozzle
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dozzle
+  namespace: observability
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dozzle.haoxiaoguai.xyz`)
+      kind: Rule
+      middlewares:
+        - name: chain-auth
+          namespace: traefik
+      services:
+        - name: dozzle
+          port: 8080
+  tls:
+    certResolver: cloudflare

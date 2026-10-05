@@ -1,0 +1,27 @@
+# ==============================================================================
+# 边缘工控机三级 OOM 驱逐防御与调度优先级 (PriorityClass)
+# 4C8G 物理硬约束：当内存压力升高时，优先驱逐非关键遥测，保全交易核心与数据持久层
+# ==============================================================================
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: edge-critical
+value: 1000000
+globalDefault: false
+description: "核心基础设施 (Postgres, Mosquitto, Traefik)，无论节点内存多紧张绝不驱逐"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: platform-standard
+value: 500000
+globalDefault: false
+description: "通用业务与平台中间件 (Valkey, Centrifugo, Temporal, Lunchbox)"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: observability-low
+value: 100000
+globalDefault: false
+description: "可观测性与审计辅助组件 (Dozzle, OpenObserve, Otel Collector)，内存受压首要驱逐"

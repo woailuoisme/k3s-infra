@@ -1,0 +1,32 @@
+# ==============================================================================
+# Meilisearch 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+
+replicaCount: 1
+
+priorityClassName: "platform-standard"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 800m
+    memory: 512Mi
+
+# 持久化存储绑定 local-path
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 10Gi
+
+# 生产环境运行模式
+environment: production
+
+# 主密钥 (由 Helm Chart 自动创建 Secret)
+auth:
+  createMasterKeySecret: true
+  masterKey: "bWaV7Z_2LHrn-t1LIJc3ENDT7R-svZ5tNMsuTifQfX0"
+
+# 日志输出精简
+logLevel: INFO

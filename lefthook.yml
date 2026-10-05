@@ -1,22 +1,12 @@
 pre-commit:
   parallel: true
   jobs:
-    - name: validate docker-compose
+    - name: validate helm & k8s
       glob:
-        - "docker-compose.yml"
-        - "**/docker-compose.yml"
-        - ".env.example"
-      run: just lint-compose
-
-    - name: validate caddyfile
-      glob:
-        - "gateways/caddy/Caddyfile"
-        - "gateways/caddy/templates/*.conf"
-        - "gateways/caddy/snippets/*.conf"
-        - "gateways/caddy/sites/*"
-        - "gateways/caddy/Dockerfile"
-        - "gateways/caddy/docker-compose.yml"
-      run: just lint-caddy
+        - "apps/**/*"
+        - "platform/**/*"
+        - "bootstrap/**/*"
+      run: just lint-helm && just lint-k8s
 
     - name: hadolint
       glob:

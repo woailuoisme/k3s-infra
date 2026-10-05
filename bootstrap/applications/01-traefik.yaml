@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 01-traefik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # 1. 官方 Traefik Helm Chart 仓库
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 34.4.1
+      helm:
+        releaseName: traefik
+        valueFiles:
+          - $values/platform/gateway/traefik/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/seaside/infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

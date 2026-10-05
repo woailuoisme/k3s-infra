@@ -1,0 +1,190 @@
+# yaml-language-server: $schema=none
+# ==============================================================================
+# CloudNative-PG (CNPG) Postgres 18 生产单实例 Cluster (4C8G 极致调优)
+# ==============================================================================
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: database
+spec:
+  instances: 1
+
+  # 边缘 OOM 驱逐最高优先级防护 (核心交易库永不驱逐)
+  priorityClassName: edge-critical
+
+  # 多模态定制镜像 (含 PostGIS, pgvector, TimescaleDB, pg_cron, pg_repack)
+  imageName: ghcr.io/seaside/postgres-multimodal:18
+
+  # 存储使用 K3s 原生 local-path (NVMe 直挂)
+  storage:
+    size: 10Gi
+    storageClass: "local-path"
+
+  # 4C8G 严苛资源限制
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+
+  # PostgreSQL 18 参数针对 8GB 节点的精准调优
+  postgresql:
+    parameters:
+      shared_buffers: "256MB"
+      work_mem: "16MB"
+      maintenance_work_mem: "64MB"
+      effective_cache_size: "1GB"
+      max_connections: "100"
+      timezone: "Asia/Shanghai"
+      wal_compression: "on"
+      shared_preload_libraries: "timescaledb,pg_cron,pg_stat_statements"
+      "cron.database_name": "postgres"
+      "cron.timezone": "Asia/Shanghai"
+      max_worker_processes: "8"
+      "timescaledb.max_background_workers": "4"
+      "timescaledb.telemetry_level": "off"
+      "pg_stat_statements.track": "all"
+      "pg_stat_statements.max": "10000"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "150"
+      statement_timeout: "60000"
+      lock_timeout: "30000"
+      idle_in_transaction_session_timeout: "120000"
+      autovacuum_vacuum_scale_factor: "0.1"
+      autovacuum_analyze_scale_factor: "0.05"
+      jit: "off"
+
+  # 初始默认数据库与用户 (对齐 docker/.env 中的 lunchbox 库)
+  bootstrap:
+    initdb:
+      database: lunchbox
+      owner: app
+      secret:
+        name: postgres-app-credentials
+      encoding: UTF8
+      localeCollate: "C.UTF-8"
+      localeCType: "C.UTF-8"
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS pg_cron;
+        - CREATE EXTENSION IF NOT EXISTS dblink;
+        - CREATE DATABASE authelia OWNER app;
+        - GRANT ALL PRIVILEGES ON DATABASE authelia TO app;
+        - |
+          CREATE OR REPLACE FUNCTION public.repack_bloated_tables(dead_tup_min bigint DEFAULT 100000, dead_ratio_min numeric DEFAULT 0.2) RETURNS void LANGUAGE plpgsql AS $$
+          DECLARE db record; conn text; tbl record;
+          BEGIN
+            FOR db IN SELECT datname FROM pg_database WHERE datistemplate = false AND datallowconn LOOP
+              conn := format('dbname=%I', db.datname);
+              FOR tbl IN SELECT * FROM dblink(conn, format(
+                'SELECT schemaname, tablename FROM pg_stat_user_tables '
+                'WHERE n_dead_tup > %s AND (n_dead_tup::numeric / greatest(n_live_tup + n_dead_tup, 1)) > %s '
+                'ORDER BY pg_total_relation_size(relid) DESC', dead_tup_min, dead_ratio_min))
+                AS t(schemaname text, tablename text) LOOP
+                BEGIN
+                  PERFORM dblink_exec(conn, format('SELECT repack.apply(%L)', format('%I.%I', tbl.schemaname, tbl.tablename)));
+                  RAISE NOTICE '[pg_repack] %.%.% repacked', db.datname, tbl.schemaname, tbl.tablename;
+                EXCEPTION WHEN OTHERS THEN
+                  RAISE NOTICE '[pg_repack] skip %.%.%: %', db.datname, tbl.schemaname, tbl.tablename, SQLERRM;
+                END;
+              END LOOP;
+            END LOOP;
+          END;
+          $$;
+        - ALTER FUNCTION public.repack_bloated_tables(bigint, numeric) SET statement_timeout = 0;
+        - ALTER FUNCTION public.repack_bloated_tables(bigint, numeric) SET lock_timeout = '60s';
+        - SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'repack-bloated-tables';
+        - SELECT cron.schedule_in_database('repack-bloated-tables', '0 3 1,16 * *', 'SELECT public.repack_bloated_tables()', 'postgres');
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector;
+        - CREATE EXTENSION IF NOT EXISTS postgis;
+        - CREATE EXTENSION IF NOT EXISTS timescaledb;
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+        - CREATE EXTENSION IF NOT EXISTS pg_repack;
+        - CREATE EXTENSION IF NOT EXISTS citext;
+        - CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        - CREATE EXTENSION IF NOT EXISTS btree_gin;
+        - CREATE EXTENSION IF NOT EXISTS btree_gist;
+        - CREATE EXTENSION IF NOT EXISTS ltree;
+        - |
+          CREATE TABLE IF NOT EXISTS vm_telemetry (
+              time            TIMESTAMPTZ NOT NULL,
+              device_no       TEXT NOT NULL,
+              voltage         DOUBLE PRECISION,
+              current         DOUBLE PRECISION,
+              uptime          INTEGER,
+              door_closed     BOOLEAN,
+              freezer_temp_0  DOUBLE PRECISION,
+              freezer_temp_1  DOUBLE PRECISION,
+              freezer_temp_2  DOUBLE PRECISION,
+              freezer_temp_3  DOUBLE PRECISION,
+              ambient_temp    DOUBLE PRECISION,
+              vibration_g     DOUBLE PRECISION,
+              rssi            INTEGER,
+              lat             DOUBLE PRECISION,
+              lng             DOUBLE PRECISION
+          );
+        - SELECT create_hypertable('vm_telemetry', 'time', if_not_exists => TRUE);
+        - CREATE INDEX IF NOT EXISTS idx_telemetry_device ON vm_telemetry (device_no, time DESC);
+        - |
+          CREATE TABLE IF NOT EXISTS vm_events (
+              time            TIMESTAMPTZ NOT NULL,
+              device_no       TEXT NOT NULL,
+              event_type      TEXT NOT NULL,
+              order_id        TEXT,
+              channel_id      TEXT,
+              oven_id         TEXT,
+              error_code      TEXT,
+              image_url       TEXT,
+              video_url       TEXT,
+              raw_data        JSONB
+          );
+        - SELECT create_hypertable('vm_events', 'time', if_not_exists => TRUE);
+        - CREATE INDEX IF NOT EXISTS idx_events_device ON vm_events (device_no, time DESC);
+        - CREATE INDEX IF NOT EXISTS idx_events_type ON vm_events (event_type, time DESC);
+        - |
+          CREATE TABLE IF NOT EXISTS vm_status (
+              time            TIMESTAMPTZ NOT NULL,
+              device_no       TEXT NOT NULL,
+              status          TEXT NOT NULL,
+              firmware        TEXT,
+              hardware        TEXT
+          );
+        - SELECT create_hypertable('vm_status', 'time', if_not_exists => TRUE);
+        - CREATE INDEX IF NOT EXISTS idx_status_device ON vm_status (device_no, time DESC);
+
+  # 原生 Barman S3 持续流式 WAL 归档与备份 (流向内网 Garage S3)
+  backup:
+    barmanObjectStore:
+      destinationPath: "s3://postgres-backups/"
+      endpointURL: "http://garage.storage.svc:3900"
+      s3Credentials:
+        accessKeyId:
+          name: garage-s3-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: garage-s3-credentials
+          key: SECRET_ACCESS_KEY
+      wal:
+        compression: gzip
+        maxParallel: 1
+    retentionPolicy: "14d"
+
+  monitoring:
+    enablePodMonitor: false
+---
+# yaml-language-server: $schema=none
+# 每天凌晨 03:00 执行全量基础物理备份
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: postgres-daily-backup
+  namespace: database
+spec:
+  immediate: true
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: postgres-cluster

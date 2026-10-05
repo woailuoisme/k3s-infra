@@ -1,0 +1,125 @@
+# ==============================================================================
+# ArgoCD 4C8G 生产精简调优 Values (ArgoCD v2.14+ 官方 Helm Chart)
+# ==============================================================================
+# 目标：在单台 4C8G 节点上将 ArgoCD 整体内存消耗压制在 350MB-450MB，并集成 SOPS+Age 解密
+# ==============================================================================
+
+global:
+  domain: argocd.haoxiaoguai.xyz
+
+# ------------------------------------------------------------------------------
+# 1. 核心控制器 (Application Controller)
+# ------------------------------------------------------------------------------
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  metrics:
+    enabled: true
+
+# ------------------------------------------------------------------------------
+# 2. 清单与配置生成服务端 (Repo Server) - 内置 SOPS + Age 无常驻解密
+# ------------------------------------------------------------------------------
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  # 挂载 Age 私钥（由集群 Secret 注入，不占用常驻控制器内存）
+  volumes:
+    - name: age-key-volume
+      secret:
+        secretName: helm-secrets-private-keys
+        items:
+          - key: key.txt
+            path: key.txt
+  volumeMounts:
+    - name: age-key-volume
+      mountPath: /helm-secrets-private-keys
+      readOnly: true
+  env:
+    - name: SOPS_AGE_KEY_FILE
+      value: /helm-secrets-private-keys/key.txt
+  # 初始化容器自动注入 SOPS 与 Age 二进制工具
+  initContainers:
+    - name: install-sops-age
+      image: alpine:3.21
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -e
+          ARCH="amd64"
+          if [ "$(uname -m)" = "aarch64" ]; then ARCH="arm64"; fi
+          # 下载 sops v3.9.4
+          wget -qO /custom-tools/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.${ARCH}
+          chmod +x /custom-tools/sops
+          # 下载 age v1.2.1
+          wget -qO - https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-${ARCH}.tar.gz | tar -xz -C /tmp
+          mv /tmp/age/age /custom-tools/age
+          chmod +x /custom-tools/age
+          rm -rf /tmp/age
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+  extraContainers: []
+
+# ------------------------------------------------------------------------------
+# 3. 内部缓存 Redis (单机极致精简)
+# ------------------------------------------------------------------------------
+redis:
+  enabled: true
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# ------------------------------------------------------------------------------
+# 4. API / Web 界面服务端 (Server)
+# ------------------------------------------------------------------------------
+server:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 150Mi
+  extraArgs:
+    - --insecure
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
+    hostname: argocd.haoxiaoguai.xyz
+    tls: true
+
+# ------------------------------------------------------------------------------
+# 5. 裁剪冗余组件 (4C8G 降本节流核心)
+# ------------------------------------------------------------------------------
+# 禁用内置 Dex（单机环境使用内置 Admin，或直接配置 GitHub OAuth，立省 ~120MB 内存）
+dex:
+  enabled: false
+
+# 禁用内置 Notifications 控制器（立省 ~80MB 内存，告警统一由 OpenObserve 或外部处理）
+notifications:
+  enabled: false
+
+# 禁用 ApplicationSet 控制器（采用 App-of-Apps 模式，立省 ~100MB 内存）
+applicationSet:
+  enabled: false

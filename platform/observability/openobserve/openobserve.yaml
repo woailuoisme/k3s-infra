@@ -1,0 +1,163 @@
+# ==============================================================================
+# OpenObserve 极简云原生日志/时序指标观测平台 (对齐 Garage S3 持久化，4C8G 调优)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openobserve-data
+  namespace: observability
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "local-path"
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openobserve
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: openobserve
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openobserve
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openobserve
+    spec:
+      priorityClassName: observability-low
+      containers:
+        - name: openobserve
+          image: openobserve/openobserve:v1.0.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5080
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: ZO_LOCAL_MODE
+              value: "true"
+            - name: ZO_LOCAL_MODE_STORAGE
+              value: "s3"
+            - name: ZO_NODE_ROLE
+              value: "all"
+            - name: ZO_S3_PROVIDER
+              value: "s3"
+            - name: ZO_S3_SERVER_URL
+              value: "http://garage.storage.svc:3900"
+            - name: ZO_S3_BUCKET_NAME
+              value: "default"
+            - name: ZO_S3_REGION_NAME
+              value: "garage"
+            - name: ZO_COMPACT_ENABLED
+              value: "true"
+            - name: ZO_TELEMETRY
+              value: "false"
+            - name: ZO_DATA_DIR
+              value: "/data"
+            - name: ZO_ROOT_USER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-secrets
+                  key: root-email
+                  optional: true
+            - name: ZO_ROOT_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-secrets
+                  key: root-password
+                  optional: true
+            - name: ZO_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-secrets
+                  key: s3-access-key
+                  optional: true
+            - name: ZO_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-secrets
+                  key: s3-secret-key
+                  optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 800m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openobserve-data
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openobserve-secrets
+  namespace: observability
+type: Opaque
+stringData:
+  root-email: "admin@gmail.com"
+  root-password: "Oo!ae13cf5850664c9a398194334d60383d"
+  auth-token: "Basic YWRtaW5AZ21haWwuY29tOk9vIWFlMTNjZjU4NTA2NjRjOWEzOTgxOTQzMzRkNjAzODNk"
+  s3-access-key: "GKfd16f76e81fb861a868a01b9b19452ad"
+  s3-secret-key: "18d5eda476ff7fb88f0bec38eae3a5e468020ae6dfc610defe2f3f72a65c4339"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: openobserve
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: openobserve
+  ports:
+    - name: http
+      port: 5080
+      targetPort: 5080
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: openobserve
+  namespace: observability
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`logs.haoxiaoguai.xyz`) || Host(`o2.haoxiaoguai.xyz`) || Host(`observe.haoxiaoguai.xyz`)
+      kind: Rule
+      services:
+        - name: openobserve
+          port: 5080
+  tls:
+    certResolver: cloudflare

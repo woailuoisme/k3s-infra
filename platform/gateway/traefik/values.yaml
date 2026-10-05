@@ -1,0 +1,324 @@
+# ==============================================================================
+# Traefik v3 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+
+deployment:
+  replicas: 1
+
+priorityClassName: "edge-critical"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 150Mi
+
+# ------------------------------------------------------------------------------
+# 端口与入口点配置 (EntryPoints)
+# ------------------------------------------------------------------------------
+ports:
+  # HTTP 入口 (默认 301 永久重定向至 HTTPS)
+  web:
+    port: 80
+    expose:
+      default: true
+    exposedPort: 80
+    redirections:
+      entryPoint:
+        to: websecure
+        scheme: https
+        permanent: true
+
+  # HTTPS 入口 (开启 HTTP/3)
+  websecure:
+    port: 443
+    expose:
+      default: true
+    exposedPort: 443
+    http3:
+      enabled: true
+
+  # 内部 Prometheus 监控端点
+  metrics:
+    port: 8082
+    expose:
+      default: false
+
+  # IoT 售货机硬件直连 MQTT TCP 端口
+  mqtt:
+    port: 1883
+    expose:
+      default: true
+    exposedPort: 1883
+    protocol: TCP
+
+# ------------------------------------------------------------------------------
+# 证书存储与 Let's Encrypt ACME 原生签发
+# ------------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 1Gi
+  path: /data
+
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: admin@haoxiaoguai.xyz
+      storage: /data/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+  letsencrypt:
+    acme:
+      email: admin@haoxiaoguai.xyz
+      storage: /data/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+
+# 从 Secret 注入 Cloudflare API 凭证 (由 SOPS 加密生成)
+env:
+  - name: CF_DNS_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token
+        key: token
+        optional: true
+
+# 自动创建 Cloudflare API Token 密钥对象 (生产可通过 SOPS + Age 加密)
+extraObjects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: cloudflare-api-token
+    type: Opaque
+    stringData:
+      token: "ucr-vmC64fatSAfVcpIYkglzGxPcbBHFqUOp_ysL"
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: traefik-dashboard
+    spec:
+      entryPoints:
+        - websecure
+      routes:
+        - match: Host(`traefik.haoxiaoguai.xyz`)
+          kind: Rule
+          middlewares:
+            - name: chain-auth
+          services:
+            - name: api@internal
+              kind: TraefikService
+      tls:
+        certResolver: cloudflare
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: security-headers
+    spec:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: compress
+    spec:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+          - "application/grpc"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: rate-limit
+    spec:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: "1s"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: authelia
+    spec:
+      forwardAuth:
+        address: "http://authelia.security.svc:9091/api/authz/forward-auth"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          - "Remote-Name"
+          - "Remote-Email"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: authelia-basic
+    spec:
+      forwardAuth:
+        address: "http://authelia.security.svc:9091/api/verify?auth=basic"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          - "Remote-Name"
+          - "Remote-Email"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: ip-allow-internal
+    spec:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: cors-headers
+    spec:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "PATCH"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "DNT"
+          - "User-Agent"
+          - "X-Requested-With"
+          - "If-Modified-Since"
+          - "Cache-Control"
+          - "Content-Type"
+          - "Range"
+          - "Authorization"
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: retry-service
+    spec:
+      retry:
+        attempts: 3
+        initialInterval: "100ms"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: buffering-default
+    spec:
+      buffering:
+        maxRequestBodyBytes: 104857600
+        memRequestBodyBytes: 2097152
+        maxResponseBodyBytes: 104857600
+        memResponseBodyBytes: 2097152
+        retryExpression: "IsNetworkError() && Attempts() <= 2"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: inflight-limit
+    spec:
+      inFlightReq:
+        amount: 50
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: circuit-breaker
+    spec:
+      circuitBreaker:
+        expression: "ResponseCodeRatio(500, 600, 0, 600) > 0.25"
+        checkPeriod: "10s"
+        fallbackDuration: "30s"
+        recoveryDuration: "30s"
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: chain-basic
+    spec:
+      chain:
+        middlewares:
+          - name: security-headers
+          - name: compress
+          - name: retry-service
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: chain-auth
+    spec:
+      chain:
+        middlewares:
+          - name: chain-basic
+          - name: authelia
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: chain-api
+    spec:
+      chain:
+        middlewares:
+          - name: chain-basic
+          - name: rate-limit
+          - name: cors-headers
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: chain-internal
+    spec:
+      chain:
+        middlewares:
+          - name: chain-basic
+          - name: ip-allow-internal
+
+# ------------------------------------------------------------------------------
+# 实验性插件 (CrowdSec Bouncer WAF)
+# ------------------------------------------------------------------------------
+experimental:
+  plugins:
+    crowdsec-bouncer:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "v1.7.1"
+
+# ------------------------------------------------------------------------------
+# 日志与指标
+# ------------------------------------------------------------------------------
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+    format: json
+    bufferingSize: 100
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+
+# 开启 IngressRoute CRD 提供者
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true

@@ -1,0 +1,44 @@
+# ==============================================================================
+# Bitnami Valkey 官方 Helm Chart 调优配置 (单机 4C8G 极致精简)
+# ==============================================================================
+
+architecture: standalone
+
+auth:
+  enabled: true
+  existingSecret: valkey-secret
+  existingSecretPasswordKey: password
+
+extraDeploy:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: valkey-secret
+    type: Opaque
+    stringData:
+      password: "redis_secret"
+
+primary:
+  priorityClassName: "platform-standard"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  persistence:
+    enabled: true
+    storageClass: "local-path"
+    size: 5Gi
+
+  # 4C8G 关键内联调优 (256MB 容器限额内，配置 192MB 内存上限)
+  configuration: |
+    maxmemory 192mb
+    maxmemory-policy allkeys-lru
+    tcp-keepalive 300
+    timeout 0
+
+metrics:
+  enabled: false # 单机模式关闭独立 exporter pod，节约 ~40MB 内存

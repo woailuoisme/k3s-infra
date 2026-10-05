@@ -1,0 +1,112 @@
+# ==============================================================================
+# imgproxy 快速动态图片缩放与格式协商引擎 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imgproxy
+  namespace: media
+  labels:
+    app.kubernetes.io/name: imgproxy
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: imgproxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: imgproxy
+    spec:
+      priorityClassName: platform-standard
+      containers:
+        - name: imgproxy
+          image: ghcr.io/imgproxy/imgproxy:v4.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: IMGPROXY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: imgproxy-secrets
+                  key: key
+                  optional: true
+            - name: IMGPROXY_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: imgproxy-secrets
+                  key: salt
+                  optional: true
+            - name: IMGPROXY_INSECURE_URLS
+              value: "true"
+            - name: IMGPROXY_ENABLE_WEBP_DETECTION
+              value: "true"
+            - name: IMGPROXY_ENABLE_AVIF_DETECTION
+              value: "true"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imgproxy
+  namespace: media
+  labels:
+    app.kubernetes.io/name: imgproxy
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: imgproxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: imgproxy-secrets
+  namespace: media
+type: Opaque
+stringData:
+  key: "016bb66d0d40f8f746c0c327eca2232495bb367e90f5d0124329a0fea07c929b"
+  salt: "07c466cebbed802f7b449c67dfad29f393df60f09ffbd2af47462f88791e3ab5"
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: imgproxy
+  namespace: media
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`img.haoxiaoguai.xyz`) || Host(`imgproxy.haoxiaoguai.xyz`)
+      kind: Rule
+      services:
+        - name: imgproxy
+          port: 8080
+  tls:
+    certResolver: cloudflare

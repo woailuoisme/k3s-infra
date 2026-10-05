@@ -1,0 +1,9 @@
+apiVersion: v2
+name: lunchbox
+description: A clean decoupled Helm chart for Lunchbox business application on K3s
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/cncf/artwork/master/other/illustrations/horizontal/color/cncf-color.png
+maintainers:
+  - name: seaside

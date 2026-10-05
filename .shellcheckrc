@@ -1,4 +1,4 @@
-# shellcheck configuration
+# shellcheck shell=sh
 # https://www.shellcheck.net/wiki/
 
 # 不强制目标 shell，让 ShellCheck 按每个脚本的 shebang 判断。

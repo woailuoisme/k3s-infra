@@ -1,0 +1,15 @@
+# ==============================================================================
+# SOPS (Secrets OPerationS) Configuration with Age
+# ==============================================================================
+# 在单台 4C8G K3s 节点上，使用 Age 密钥实现纯静态、零内存常驻的 GitOps 加密方案。
+# 开发者本地安装 age 与 sops，使用公钥加密；ArgoCD repo-server 挂载私钥在内存中解密。
+# ==============================================================================
+
+creation_rules:
+  # 匹配所有以 .enc.yaml 或 .enc.yml 结尾的文件
+  - path_regex: .*\.enc\.ya?ml$
+    # 替换为您本地通过 age-keygen 生成的真实公钥 (age1...)
+    # 示例: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+    age: "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"
+    # 加密除 metadata/name/namespace/kind/apiVersion 外的所有敏感值 (可自定义)
+    encrypted_regex: "^(data|stringData|secrets|.*_password|.*_secret|.*_key)$"

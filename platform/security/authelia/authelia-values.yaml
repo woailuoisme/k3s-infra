@@ -1,0 +1,76 @@
+# ==============================================================================
+# Authelia 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
+# ==============================================================================
+
+replicaCount: 1
+
+priorityClassName: "platform-standard"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 300m
+    memory: 128Mi
+
+configMap:
+  theme: light
+  default_redirection_url: "https://auth.haoxiaoguai.xyz"
+  server:
+    buffers:
+      read: 4096
+      write: 4096
+
+  # 会话存储对接内网 Valkey
+  session:
+    redis:
+      host: "valkey-primary.database.svc"
+      port: 6379
+      database_index: 1
+
+  # 持久化存储对接内网 CloudNative-PG Postgres
+  storage:
+    postgres:
+      host: "postgres-cluster-rw.database.svc"
+      port: 5432
+      database: "authelia"
+      username: "app"
+
+  # 认证用户源 (文件后端，挂载 authelia-users ConfigMap)
+  authentication_backend:
+    file:
+      path: /config/users_database.yml
+      watch: true
+      search:
+        email: true
+        case_insensitive: true
+
+  # 统一访问控制策略 (ACL - 对齐生产)
+  access_control:
+    default_policy: deny
+    rules:
+      - domain:
+          - "auth.haoxiaoguai.xyz"
+        policy: bypass
+      - domain:
+          - "*.haoxiaoguai.xyz"
+        policy: one_factor
+        subject:
+          - "group:admin"
+
+# 额外卷挂载，用于挂载 users_database.yml
+extraVolumes:
+  - name: users-database
+    configMap:
+      name: authelia-users
+
+extraVolumeMounts:
+  - name: users-database
+    mountPath: /config/users_database.yml
+    subPath: users_database.yml
+    readOnly: true
+
+# 敏感密钥绑定集群内部 Secret (由 SOPS 解密注入)
+secret:
+  existingSecret: authelia-secret

@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    // 容器与镜像安全
+    "ms-azuretools.vscode-docker",
+    // Kubernetes 与 Helm
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "tim-koehler.helm-intellisense",
+    // Shell 脚本静态分析与格式化
+    "timonwong.shellcheck",
+    "mkhl.shfmt",
+    // 基础设施配置与标准格式
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "editorconfig.editorconfig",
+    // CI/CD 与任务运行器
+    "skellock.just",
+    // 本地多版本与环境管理
+    "jdx.mise"
+  ]
+}
