@@ -1,0 +1,69 @@
+{{- if .Values.homepage.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: homepage
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  settings.yaml: |
+    title: Lunchbox Dashboard
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    layout:
+      - Services:
+          style: row
+          columns: 3
+      - Infrastructure:
+          style: row
+          columns: 3
+  
+  services.yaml: |
+    - Services:
+        - PHP Application:
+            icon: php.png
+            href: https://dev.{{ .Values.global.domain }}
+            description: Main PHP Application
+        - API:
+            icon: mdi-api
+            href: https://rest.{{ .Values.global.domain }}
+            description: RoadRunner API
+        - WebSocket:
+            icon: mdi-lan-connect
+            href: https://ws.{{ .Values.global.domain }}
+            description: Reverb WebSocket
+    
+    - Infrastructure:
+        - MinIO Console:
+            icon: minio.png
+            href: https://mo.{{ .Values.global.domain }}
+            description: Object Storage Console
+        - Meilisearch:
+            icon: meilisearch.png
+            href: https://search.{{ .Values.global.domain }}
+            description: Search Engine
+        - Dozzle:
+            icon: dozzle.png
+            href: https://dozzle.{{ .Values.global.domain }}
+            description: Log Viewer
+  
+  kubernetes.yaml: |
+    mode: cluster
+  
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+{{- end }}

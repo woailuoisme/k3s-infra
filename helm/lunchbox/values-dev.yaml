@@ -1,0 +1,97 @@
+# 开发环境配置
+
+global:
+  domain: dev.example.com
+
+# PHP-FPM - 开发环境单副本
+phpFpm:
+  replicaCount: 1
+  image:
+    tag: dev
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# PHP RoadRunner
+phpRoadrunner:
+  replicaCount: 1
+  image:
+    tag: dev
+
+# PHP Horizon
+phpHorizon:
+  replicaCount: 1
+  image:
+    tag: dev
+
+# PHP Schedule
+phpSchedule:
+  replicaCount: 1
+  image:
+    tag: dev
+
+# PHP Reverb
+phpReverb:
+  replicaCount: 1
+  image:
+    tag: dev
+
+# PostgreSQL - 开发环境小规格
+postgresql:
+  persistence:
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+# Redis - 开发环境小规格
+redis:
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+# Meilisearch
+meilisearch:
+  persistence:
+    size: 5Gi
+
+# MinIO
+minio:
+  persistence:
+    size: 20Gi
+
+# Ingress - 开发环境域名
+ingress:
+  routes:
+    app:
+      host: dev.example.com
+    api:
+      host: api-dev.example.com
+    websocket:
+      host: ws-dev.example.com
+    minioConsole:
+      host: minio-dev.example.com
+    minioApi:
+      host: s3-dev.example.com
+    search:
+      host: search-dev.example.com
+    homepage:
+      host: home-dev.example.com
+    dozzle:
+      host: logs-dev.example.com
+    gotify:
+      host: notify-dev.example.com

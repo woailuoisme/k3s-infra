@@ -1,0 +1,244 @@
+{{- if .Values.ingress.enabled }}
+---
+# PHP 应用路由
+{{- if .Values.ingress.routes.app.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: app-https
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.app.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.app.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.app.service }}
+      port: {{ .Values.ingress.routes.app.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# RoadRunner API 路由
+{{- if .Values.ingress.routes.api.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: api-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.api.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.api.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.api.service }}
+      port: {{ .Values.ingress.routes.api.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# WebSocket 路由
+{{- if .Values.ingress.routes.websocket.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: websocket-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.websocket.host }}`)
+    kind: Rule
+    services:
+    - name: {{ .Values.ingress.routes.websocket.service }}
+      port: {{ .Values.ingress.routes.websocket.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# MinIO Console 路由
+{{- if .Values.ingress.routes.minioConsole.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-console-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.minioConsole.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.minioConsole.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.minioConsole.service }}
+      port: {{ .Values.ingress.routes.minioConsole.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# MinIO API 路由
+{{- if .Values.ingress.routes.minioApi.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-api-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.minioApi.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.minioApi.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.minioApi.service }}
+      port: {{ .Values.ingress.routes.minioApi.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# Meilisearch 路由
+{{- if .Values.ingress.routes.search.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: search-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.search.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.search.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.search.service }}
+      port: {{ .Values.ingress.routes.search.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# Homepage 路由
+{{- if .Values.ingress.routes.homepage.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: homepage-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.homepage.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.homepage.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.homepage.service }}
+      port: {{ .Values.ingress.routes.homepage.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# Dozzle 路由
+{{- if .Values.ingress.routes.dozzle.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dozzle-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.dozzle.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.dozzle.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.dozzle.service }}
+      port: {{ .Values.ingress.routes.dozzle.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+---
+# Gotify 路由
+{{- if .Values.ingress.routes.gotify.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gotify-https
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`{{ .Values.ingress.routes.gotify.host }}`)
+    kind: Rule
+    middlewares:
+    {{- range .Values.ingress.routes.gotify.middlewares }}
+    - name: {{ . }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ingress.routes.gotify.service }}
+      port: {{ .Values.ingress.routes.gotify.port }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    certResolver: {{ .Values.ingress.tls.certResolver }}
+  {{- end }}
+{{- end }}
+
+{{- end }}

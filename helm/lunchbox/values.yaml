@@ -1,0 +1,527 @@
+# Lunchbox Helm Chart - 默认配置
+
+# 全局配置
+global:
+  domain: example.com
+  timezone: Asia/Shanghai
+  imageRegistry: docker.io
+  imagePullSecrets: []
+  storageClass: ""  # 使用集群默认 StorageClass
+
+# 命名空间
+namespace: lunchbox
+
+# PHP-FPM 应用
+phpFpm:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: your-registry/php-fpm
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Nginx Sidecar
+  nginx:
+    image:
+      repository: nginx
+      tag: alpine
+      pullPolicy: IfNotPresent
+    port: 80
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # 健康检查
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  
+  # 应用代码卷
+  appCode:
+    enabled: true
+    size: 5Gi
+    mountPath: /var/www/lunchbox
+
+
+# PHP RoadRunner
+phpRoadrunner:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: your-registry/php-roadrunner
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8001
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# PHP Horizon (队列处理)
+phpHorizon:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: your-registry/php-horizon
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# PHP Schedule (定时任务)
+phpSchedule:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: your-registry/php-schedule
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+# PHP Reverb (WebSocket)
+phpReverb:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: your-registry/php-reverb
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8080
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 5432
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  
+  auth:
+    database: lunchbox
+    username: lunchbox
+    # password 通过 Secret 管理
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 6379
+  
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+  
+  # password 通过 Secret 管理
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+# Meilisearch
+meilisearch:
+  enabled: true
+  image:
+    repository: getmeili/meilisearch
+    tag: v1.30
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 7700
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  
+  # masterKey 通过 Secret 管理
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# MinIO
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    api:
+      type: ClusterIP
+      port: 9000
+    console:
+      type: ClusterIP
+      port: 9001
+  
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+  
+  # rootUser 和 rootPassword 通过 Secret 管理
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+
+# Authelia (认证服务)
+authelia:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: authelia/authelia
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 9091
+  
+  # SMTP 配置（Resend）
+  smtp:
+    username: "resend"
+    apiKey: "change-this-resend-api-key"
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Centrifugo (实时消息)
+centrifugo:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: centrifugo/centrifugo
+    tag: v6
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  # 密钥配置（生产环境请修改）
+  tokenSecret: "change-this-token-secret"
+  apiKey: "change-this-api-key"
+  adminPassword: "change-this-admin-password"
+  adminSecret: "change-this-admin-secret"
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Mosquitto (MQTT)
+mosquitto:
+  enabled: true
+  image:
+    repository: eclipse-mosquitto
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 1883
+  
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Gotify (通知服务)
+gotify:
+  enabled: true
+  image:
+    repository: gotify/server
+    tag: "2.7"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  # 管理员密码（生产环境请修改）
+  adminPassword: "change-this-password"
+  
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Homepage (仪表板)
+homepage:
+  enabled: true
+  image:
+    repository: ghcr.io/gethomepage/homepage
+    tag: v1.8
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  # 需要 RBAC 权限访问 K8s API
+  rbac:
+    create: true
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+# Dozzle (日志查看器)
+dozzle:
+  enabled: true
+  image:
+    repository: amir20/dozzle
+    tag: v8.14
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8080
+  
+  # 需要 RBAC 权限访问 K8s API
+  rbac:
+    create: true
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+
+# Ingress 配置
+ingress:
+  enabled: true
+  className: traefik
+  
+  # TLS 配置
+  tls:
+    enabled: true
+    certResolver: letsencrypt
+  
+  # 路由配置
+  routes:
+    # PHP 应用
+    app:
+      enabled: true
+      host: dev.example.com
+      service: php-fpm
+      port: 80
+      middlewares:
+        - authelia-forward-auth
+    
+    # RoadRunner API
+    api:
+      enabled: true
+      host: rest.example.com
+      service: php-roadrunner
+      port: 8001
+      middlewares:
+        - authelia-forward-auth
+    
+    # WebSocket
+    websocket:
+      enabled: true
+      host: ws.example.com
+      service: php-reverb
+      port: 8080
+    
+    # MinIO Console
+    minioConsole:
+      enabled: true
+      host: mo.example.com
+      service: minio-console
+      port: 9001
+      middlewares:
+        - authelia-forward-auth
+    
+    # MinIO API
+    minioApi:
+      enabled: true
+      host: mos.example.com
+      service: minio-api
+      port: 9000
+      middlewares:
+        - authelia-forward-auth
+    
+    # Meilisearch
+    search:
+      enabled: true
+      host: search.example.com
+      service: meilisearch
+      port: 7700
+      middlewares:
+        - authelia-forward-auth
+    
+    # Homepage
+    homepage:
+      enabled: true
+      host: home.example.com
+      service: homepage
+      port: 3000
+      middlewares:
+        - authelia-forward-auth
+    
+    # Dozzle
+    dozzle:
+      enabled: true
+      host: dozzle.example.com
+      service: dozzle
+      port: 8080
+      middlewares:
+        - authelia-forward-auth
+    
+    # Gotify
+    gotify:
+      enabled: true
+      host: msg.example.com
+      service: gotify
+      port: 80
+      middlewares:
+        - authelia-forward-auth
+
+# 安全配置
+# Pod 级别的 securityContext
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# 容器级别的 securityContext
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# 网络策略
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+

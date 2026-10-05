@@ -1,0 +1,11 @@
+# shellcheck configuration
+# https://www.shellcheck.net/wiki/
+
+# 不强制目标 shell，让 ShellCheck 按每个脚本的 shebang 判断。
+# 仓库同时包含 /bin/sh 和 bash 脚本，统一 shell 会产生误报。
+
+# 阻断级别由 justfile 中的 shellcheck --severity 显式控制。
+
+# 项目脚本包含容器入口脚本、交互式运维脚本和命令拼装场景；
+# 以下规则作为仓库基线处理，后续可按服务逐步收紧。
+disable=SC2034,SC2046,SC2086,SC2155,SC2207,SC3037,SC3043,SC3048

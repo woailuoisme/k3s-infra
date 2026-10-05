@@ -1,0 +1,219 @@
+# yaml-language-server: $schema=https://json.schemastore.org/traefik-v3.json
+# ==============================================================================
+# Traefik v3 通用中间件配置 (Common Middlewares)
+# ==============================================================================
+
+http:
+  middlewares:
+    # --------------------------------------------------------------------------
+    # 1. 安全响应头 (Security Headers)
+    # --------------------------------------------------------------------------
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+
+    # --------------------------------------------------------------------------
+    # 2. 内容压缩中间件 (Gzip & Brotli)
+    # --------------------------------------------------------------------------
+    compress:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+          - "application/grpc"
+
+    # --------------------------------------------------------------------------
+    # 3. 速率限制中间件 (Rate Limiting)
+    # --------------------------------------------------------------------------
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: "1s"
+
+    # --------------------------------------------------------------------------
+    # 4. 控制台 BasicAuth 基础认证 (预设 admin / admin)
+    # 生成新哈希: echo $(htpasswd -nb <user> <password>)
+    # --------------------------------------------------------------------------
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/"
+
+    # --------------------------------------------------------------------------
+    # 5. Authelia Web 单点登录认证 (ForwardAuth Web Mode)
+    # 适用于 Web 业务应用，未登录时重定向至 Authelia 登录门户页面
+    # 官方文档: https://www.authelia.com/integration/proxies/traefik/
+    # --------------------------------------------------------------------------
+    authelia:
+      forwardAuth:
+        address: 'http://{{ env "AUTHELIA_HOST" | default "authelia:9091" }}/api/authz/forward-auth'
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          - "Remote-Name"
+          - "Remote-Email"
+
+    # --------------------------------------------------------------------------
+    # 6. Authelia API 基础认证 (ForwardAuth API / BasicAuth Mode)
+    # 适用于 API / 微服务 / CLI / Git 终端调用，认证失败直接返回 401 Unauthorized
+    # 官方文档: https://www.authelia.com/integration/proxies/traefik/#api-or-basic-auth
+    # --------------------------------------------------------------------------
+    authelia-basic:
+      forwardAuth:
+        address: 'http://{{ env "AUTHELIA_HOST" | default "authelia:9091" }}/api/verify?auth=basic'
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          - "Remote-Name"
+          - "Remote-Email"
+
+    # --------------------------------------------------------------------------
+    # 7. 内网 IP 白名单 (IP AllowList - 限制管理端/敏感接口仅私网访问)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/ipallowlist/
+    # --------------------------------------------------------------------------
+    ip-allow-internal:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+
+    # --------------------------------------------------------------------------
+    # 8. 跨域资源共享头 (CORS Headers)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/headers/
+    # --------------------------------------------------------------------------
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "PATCH"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "DNT"
+          - "User-Agent"
+          - "X-Requested-With"
+          - "If-Modified-Since"
+          - "Cache-Control"
+          - "Content-Type"
+          - "Range"
+          - "Authorization"
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    # --------------------------------------------------------------------------
+    # 9. 服务网络故障重试 (Retry - 微服务防 502 抖动)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/retry/
+    # --------------------------------------------------------------------------
+    retry-service:
+      retry:
+        attempts: 3
+        initialInterval: "100ms"
+
+    # --------------------------------------------------------------------------
+    # 10. 请求与响应缓冲 (Buffering - 慢速连接攻击防护与默认 100MB 上传限制)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/buffering/
+    # --------------------------------------------------------------------------
+    buffering-default:
+      buffering:
+        maxRequestBodyBytes: 104857600  # 100MB
+        memRequestBodyBytes: 2097152    # 2MB
+        maxResponseBodyBytes: 104857600 # 100MB
+        memResponseBodyBytes: 2097152   # 2MB
+        retryExpression: "IsNetworkError() && Attempts() <= 2"
+
+    # --------------------------------------------------------------------------
+    # 11. 并发请求数限制 (InFlightReq - 防突发并发击穿后端连接池)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/inflightreq/
+    # --------------------------------------------------------------------------
+    inflight-limit:
+      inFlightReq:
+        amount: 50
+        sourceCriterion:
+          ipStrategy:
+            depth: 0
+
+    # --------------------------------------------------------------------------
+    # 12. 熔断保护 (CircuitBreaker - 5xx 异常率超过 25% 时触发快断)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/circuitbreaker/
+    # --------------------------------------------------------------------------
+    circuit-breaker:
+      circuitBreaker:
+        expression: "ResponseCodeRatio(500, 600, 0, 600) > 0.25"
+        checkPeriod: "10s"
+        fallbackDuration: "30s"
+        recoveryDuration: "30s"
+
+    # --------------------------------------------------------------------------
+    # 13. CrowdSec WAF & 入侵检测中间件 (CrowdSec Bouncer + AppSec WAF)
+    # 官方插件: https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin
+    # 模式: Stream 模式 (内存缓存决策库，亚毫秒判定) + AppSec 实时 WAF 深度 Payload 检查
+    # 解耦设计: 默认 enabled 与 crowdsecAppsecEnabled 设为 false，Traefik 启动即载入中间件
+    #          但完全绕过检测且不向 CrowdSec 发起连接（0 报错与 0 性能损耗）。
+    #          当在 gateways/docker-compose.yml 中引入 crowdsec 服务后，将下方两项开关改为 true 即可。
+    # --------------------------------------------------------------------------
+    crowdsec-bouncer:
+      plugin:
+        crowdsec-bouncer:
+          enabled: false
+          crowdsecMode: stream
+          crowdsecLapiScheme: http
+          crowdsecLapiHost: '{{ env "CROWDSEC_LAPI_HOST" | default "crowdsec:8080" }}'
+          crowdsecLapiKey: '{{ env "CROWDSEC_BOUNCER_KEY" | default "crowdsec-traefik-bouncer-dev-secret-key-32ch" }}'
+          crowdsecAppsecEnabled: false
+          crowdsecAppsecHost: '{{ env "CROWDSEC_APPSEC_HOST" | default "crowdsec:7422" }}'
+          crowdsecAppsecFailureBlock: false
+          crowdsecAppsecUnreachableBlock: false
+          clientTrustedIPs:
+            - "127.0.0.1/8"
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+
+    # --------------------------------------------------------------------------
+    # 14. 标准中间件链路组合 (Chains - 对应 Caddy proxy-app 模式)
+    # 官方文档: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/chain/
+    # --------------------------------------------------------------------------
+    # 基础安全链路 (基础 Web 服务首选: 安全响应头 + 内容压缩 + 防 502 重试)
+    chain-basic:
+      chain:
+        middlewares:
+          - security-headers
+          - compress
+          - retry-service
+
+    # 认证防护链路 (对应 Caddy 的 proxy-app-auth: 基础安全 + Authelia 单点登录)
+    chain-auth:
+      chain:
+        middlewares:
+          - chain-basic
+          - authelia
+
+    # API 接口专用链路 (基础安全 + 频率限制 + CORS 跨域)
+    chain-api:
+      chain:
+        middlewares:
+          - chain-basic
+          - rate-limit
+          - cors-headers
+
+    # 内网受控链路 (基础安全 + 仅内网私有网段可访问)
+    chain-internal:
+      chain:
+        middlewares:
+          - chain-basic
+          - ip-allow-internal

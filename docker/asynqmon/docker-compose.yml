@@ -1,0 +1,18 @@
+# 为 hibiken/asynqmon 提供 Docker 容器配置，便于在本地 Web 界面监控 Redis Asynq 队列任务
+services:
+  asynqmon:
+    container_name: asynqmon
+    image: hibiken/asynqmon:latest
+    # 强制在 Mac arm64 环境下以 amd64 平台模拟运行，以解决官方镜像缺失 arm64 的问题
+    platform: linux/amd64
+    restart: always
+    ports:
+      - "${ASYNQMON_PORT:-8500}:8080"
+    # 直接使用 Valkey 服务的 DNS 名称连接，并通过环境变量注入 Redis 密码与数据库索引
+    command:
+      - "--redis-addr=${ASYNQMON_REDIS_ADDR:-valkey:6379}"
+      - "--redis-password=${REDIS_PASSWORD}"
+      - "--redis-db=${ASYNQMON_REDIS_DB:-0}"
+    networks:
+      - backend
+

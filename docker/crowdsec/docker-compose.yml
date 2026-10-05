@@ -1,0 +1,29 @@
+services:
+  crowdsec:
+    build:
+      context: .
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      - TZ=${TIMEZONE:-Asia/Shanghai}
+      # 启用 SQLite WAL (Write-Ahead Logging) 模式，大幅提升并发读写吞吐，杜绝数据库锁冲突
+      - USE_WAL=true
+      # 声明式自动注册双网关 Bouncer 认证密钥 (免手动运行 cscli)
+      - BOUNCER_KEY_traefik=${CROWDSEC_BOUNCER_KEY_TRAEFIK:-${CROWDSEC_BOUNCER_KEY:-crowdsec-traefik-bouncer-dev-secret-key-32ch}}
+      - BOUNCER_KEY_caddy=${CROWDSEC_BOUNCER_KEY_CADDY:-crowdsec-caddy-bouncer-dev-secret-key-32ch}
+    volumes:
+      # 持久化数据与动态配置
+      - ${DATA_PATH}crowdsec/data:/var/lib/crowdsec/data
+      - ${DATA_PATH}crowdsec/config:/etc/crowdsec
+      # 挂载双网关访问日志 (只读采集)
+      - ${LOG_PATH}traefik:/var/log/traefik:ro
+      - ${LOG_PATH}caddy:/var/log/caddy:ro
+    # 容器间走 backend 内部网络通信 (LAPI:8080, AppSec:7422, Metrics:6060)，无需暴露宿主机端口
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+

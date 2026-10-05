@@ -1,0 +1,20 @@
+{{- if .Values.homepage.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: homepage
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.homepage.service.type }}
+  ports:
+  - port: {{ .Values.homepage.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: homepage
+{{- end }}

@@ -1,0 +1,20 @@
+{{- if .Values.authelia.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: authelia
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: authelia
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.authelia.service.type }}
+  ports:
+  - port: {{ .Values.authelia.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: authelia
+{{- end }}

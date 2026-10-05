@@ -1,0 +1,38 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.sh]
+indent_style = tab
+indent_size = 4
+# shfmt 读取以下选项：
+# binary_next_line = true   → 长管道/逻辑运算符换行时操作符放行首（-bn）
+# switch_case_indent = true → case 分支缩进（-ci）
+# space_redirects = true    → 重定向符号两侧加空格（-sr）
+binary_next_line = true
+switch_case_indent = true
+space_redirects = true
+
+[Dockerfile*]
+indent_style = space
+indent_size = 4
+
+[*.yml]
+indent_style = space
+indent_size = 2
+
+[*.yaml]
+indent_style = space
+indent_size = 2
+
+[*.toml]
+indent_style = space
+indent_size = 2
+
+[justfile]
+indent_style = space
+indent_size = 4

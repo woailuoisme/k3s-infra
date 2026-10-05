@@ -1,0 +1,43 @@
+# rumdl Markdown 静态检测与格式化配置
+
+[global]
+# 忽略检查的目录与文件
+exclude = [
+    ".git",
+    ".github",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    "data",
+    "logs",
+    "storage",
+    "CHANGELOG.md",
+    "LICENSE.md",
+]
+# 遵守 .gitignore 忽略规则
+respect-gitignore = true
+
+# 禁用的规则
+disable = [
+    "MD013",  # 忽略单行长度限制 (避免中文/链接报错)
+    "MD033",  # 允许行内 HTML 标签
+    "MD036",  # 允许独立加粗文本行作为标签 (如 **示例：**)
+    "MD041",  # 允许首行非 H1 标题 (适配 @RTK.md 等指令)
+]
+
+# 标题层级样式保持一致
+[MD003]
+style = "consistent"
+
+# 无序列表标记保持一致
+[MD004]
+style = "consistent"
+
+# 斜体强调样式保持一致
+[MD049]
+style = "consistent"
+
+# 粗体加粗样式保持一致
+[MD050]
+style = "consistent"

@@ -1,0 +1,13 @@
+{
+  "type": "github",
+  "config": {
+    "url": "https://argocd.example.com/api/webhook",
+    "content_type": "json",
+    "secret": "your-webhook-secret-here",
+    "insecure_ssl": "0"
+  },
+  "events": [
+    "push"
+  ],
+  "active": true
+}

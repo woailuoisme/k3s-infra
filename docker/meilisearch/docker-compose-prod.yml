@@ -1,0 +1,16 @@
+services:
+  meilisearch:
+    image: jiaoio/meilisearch
+    container_name: meilisearch
+    restart: always
+    command: meilisearch --config-file-path /meili_config/config.toml
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    ports:
+      - "${MEILI_PORT:-7700}:7700"
+    volumes:
+      - ${DATA_PATH}meili_data:/meili_data
+      - ${CONFIG_PATH}meilisearch/config.toml:/meili_config/config.toml:ro
+    networks:
+      - frontend
+      - backend

@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://json.schemastore.org/traefik-v3.json
+# ==============================================================================
+# Traefik v3 Static Configuration (静态基础配置)
+# ==============================================================================
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+# ------------------------------------------------------------------------------
+# 日志配置 (Logging)
+# ------------------------------------------------------------------------------
+log:
+  level: INFO
+  format: common
+
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+  bufferingSize: 100
+  filters:
+    retryAttempts: true
+    minDuration: 10ms
+
+# ------------------------------------------------------------------------------
+# 实验性功能与社区插件 (Plugins)
+# ------------------------------------------------------------------------------
+experimental:
+  plugins:
+    crowdsec-bouncer:
+      moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+      version: v1.7.1
+
+# ------------------------------------------------------------------------------
+# API 与 Dashboard 仪表盘 (API & Dashboard)
+# ------------------------------------------------------------------------------
+api:
+  dashboard: true
+  insecure: false # 禁用非安全的 8080 直接端口暴露，改由 dynamic/dashboard.yml 路由统一管理
+
+# ------------------------------------------------------------------------------
+# 入口点配置 (EntryPoints)
+# ------------------------------------------------------------------------------
+entryPoints:
+  # HTTP 入口 (默认自动重定向至 HTTPS)
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  # HTTPS 入口 (支持 HTTP/3，全局挂载 CrowdSec WAF/入侵防御中间件)
+  websecure:
+    address: ":443"
+    http3: {}
+    http:
+      tls: {}
+      middlewares:
+        - crowdsec-bouncer@file
+
+  # Prometheus 监控指标专用内部入口点 (由 vmagent 内部抓取，不暴露公网)
+  metrics:
+    address: ":8082"
+
+# ------------------------------------------------------------------------------
+# 配置提供者 (Providers)
+# ------------------------------------------------------------------------------
+providers:
+  # Docker 容器动态标签服务发现
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "frontend"
+    watch: true
+
+  # File 动态文件配置提供者 (支持 Go 模版变量热重载)
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# ------------------------------------------------------------------------------
+# 证书解析器 (Let's Encrypt ACME 原生自动签发与续期)
+# ------------------------------------------------------------------------------
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@example.com
+      storage: /etc/traefik/acme/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+
+# ------------------------------------------------------------------------------
+# 监控与指标采集 (Prometheus Metrics)
+# ------------------------------------------------------------------------------
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true

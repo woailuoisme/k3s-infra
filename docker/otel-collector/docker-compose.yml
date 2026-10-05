@@ -1,0 +1,32 @@
+services:
+  # 【必要】OTLP 统一摄取网关：应用遥测 → OpenObserve（重试/排队/批处理，后端重启不丢数据）
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    container_name: otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    ports:
+      - "4317:4317" # OTLP gRPC（宿主应用上报入口）
+      - "4318:4318" # OTLP HTTP
+      - "127.0.0.1:13133:13133" # 内部健康探针（宿主 curl 探活入口）
+      - "127.0.0.1:8888:8888"   # Prometheus 自身监控指标（队列水位/批处理统计）
+    environment:
+      # "Basic " + base64("账号:密码")，与 OpenObserve 摄取凭证一致
+      - O2_AUTH=${O2_AUTH}
+    volumes:
+      - ${CONFIG_PATH}observability/otel-collector/config.yml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      openobserve:
+        condition: service_healthy
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  backend:
+    external: true
+    name: backend

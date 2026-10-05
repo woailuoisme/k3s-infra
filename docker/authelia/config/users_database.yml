@@ -1,0 +1,26 @@
+# Authelia 用户数据库配置
+# 根据 configuration.yml 配置生成的用户
+# 密码策略: 最小8位，包含大写字母、数字和特殊字符
+# 密码哈希算法: Argon2id (推荐的安全哈希算法)
+# docker run --rm authelia/authelia:4.39 authelia crypto hash generate argon2 --password 'User123!'
+users:
+  # 管理员用户
+  admin:
+    disabled: false
+    displayname: "系统管理员"
+    # 密码: Admin123! (符合密码策略要求)
+    password: "$argon2id$v=19$m=65536,t=3,p=4$S5yZIio6/bxYBDTHjzWR5w$pX7+aniLA8SrPv2/iLH3lMF41o8k/fHoTY2Rpjgybvw"
+    email: admin@jso.lol
+    groups:
+      - admin
+      - user
+
+  # 普通用户
+  user:
+    disabled: false
+    displayname: "普通用户"
+    # 密码: User123! (符合密码策略要求)
+    password: "$argon2id$v=19$m=65536,t=3,p=4$0WXsk9oIUar9Wqwj8z6c0g$yUtxJeijRskYul/3JOJU9hzXLuHXwh/RMbs62pb2yBk"
+    email: user@jso.lol
+    groups:
+      - user

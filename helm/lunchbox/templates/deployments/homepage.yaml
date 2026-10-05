@@ -1,0 +1,53 @@
+{{- if .Values.homepage.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: homepage
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      {{- if .Values.homepage.rbac.create }}
+      serviceAccountName: homepage
+      {{- end }}
+      containers:
+      - name: homepage
+        image: "{{ .Values.homepage.image.repository }}:{{ .Values.homepage.image.tag }}"
+        imagePullPolicy: {{ .Values.homepage.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        resources:
+          {{- toYaml .Values.homepage.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: homepage-config
+{{- end }}

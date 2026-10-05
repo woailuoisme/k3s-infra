@@ -1,0 +1,20 @@
+{{- if .Values.centrifugo.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: centrifugo
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: centrifugo
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.centrifugo.service.type }}
+  ports:
+  - port: {{ .Values.centrifugo.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: centrifugo
+{{- end }}

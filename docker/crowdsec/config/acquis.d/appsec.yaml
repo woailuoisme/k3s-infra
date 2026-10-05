@@ -1,0 +1,8 @@
+# ==============================================================================
+# CrowdSec AppSec WAF 流量接入配置 (CrowdSec AppSec WAF Listener)
+# ==============================================================================
+appsec_config: crowdsecurity/appsec-default
+labels:
+  type: appsec
+listen_addr: 0.0.0.0:7422
+source: appsec

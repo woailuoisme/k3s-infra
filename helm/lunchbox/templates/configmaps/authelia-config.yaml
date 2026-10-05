@@ -1,0 +1,145 @@
+{{- if .Values.authelia.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authelia-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: authelia
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  configuration.yml: |
+    # Authelia 配置文件
+    theme: dark
+
+    identity_validation:
+      reset_password:
+        jwt_secret: sUdz4hhhKPMhplagMREEsRtiRZ9yF1ldr3e5iJv8AQQqXUAe35gEmY8ycS4ffSwm
+
+    server:
+      address: "tcp://0.0.0.0:9091"
+      endpoints:
+        authz:
+          auth-request:
+            implementation: "AuthRequest"
+          forward-auth:
+            implementation: "ForwardAuth"
+          ext-authz:
+            implementation: "ExtAuthz"
+          legacy:
+            implementation: "Legacy"
+
+    log:
+      level: info
+      format: json
+
+    totp:
+      issuer: '{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+      algorithm: sha1
+      period: 30
+      digits: 6
+
+    authentication_backend:
+      file:
+        path: /config/users_database.yml
+        watch: false
+        search:
+          email: true
+          case_insensitive: true
+
+    password_policy:
+      standard:
+        enabled: true
+        min_length: 8
+        max_length: 0
+        require_uppercase: true
+        require_number: true
+        require_special: true
+
+    access_control:
+      default_policy: deny
+      rules:
+        - domain:
+            - 'auth.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          policy: "bypass"
+        
+        - domain:
+            - 'dev.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          resources:
+            - "^/docs(/.*)?$"
+          policy: "one_factor"
+          subject:
+            - "group:user"
+        
+        - domain:
+            - 'dev.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          resources:
+            - "^/horizon(/.*)?$"
+            - "^/log-viewer(/.*)?$"
+          policy: "one_factor"
+          subject:
+            - "group:admin"
+        
+        - domain:
+            - 'rest.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          resources:
+            - "^/docs(/.*)?$"
+          policy: "one_factor"
+          subject:
+            - "group:user"
+        
+        - domain:
+            - 'rest.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          resources:
+            - "^/horizon(/.*)?$"
+            - "^/log-viewer(/.*)?$"
+          policy: "one_factor"
+          subject:
+            - "group:admin"
+        
+        - domain:
+            - '{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+            - '*.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          policy: "one_factor"
+          subject:
+            - "group:admin"
+
+    session:
+      secret: 481F2EN0L2RQJHT882OSM
+      name: "authelia_session"
+      inactivity: "60m"
+      expiration: "3h"
+      remember_me: "1M"
+      cookies:
+        - domain: '{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          authelia_url: 'https://auth.{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+          same_site: "lax"
+
+    regulation:
+      max_retries: 3
+      find_time: "2m"
+      ban_time: "5m"
+
+    storage:
+      encryption_key: 481F2EN0L2RQJHT882OSM
+      local:
+        path: /config/db.sqlite3
+
+    notifier:
+      disable_startup_check: true
+      smtp:
+        address: "submission://smtp.resend.com:587"
+        username: '{{ "{{" }} env "RESEND_USER_NAME" {{ "}}" }}'
+        password: '{{ "{{" }} env "RESEND_API_KEY" {{ "}}" }}'
+        sender: "support@jso.lol"
+        identifier: '{{ "{{" }} env "DOMAIN" {{ "}}" }}'
+        subject: "[Authelia] {title}"
+
+    ntp:
+      address: "udp://time.cloudflare.com:123"
+      version: 4
+      max_desync: "3 seconds"
+      disable_startup_check: false
+      disable_failure: false
+{{- end }}

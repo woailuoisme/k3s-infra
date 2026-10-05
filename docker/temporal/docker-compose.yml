@@ -1,0 +1,45 @@
+services:
+  # ==============================================================================
+  # Temporal 工作流与分布式事务编排引擎 (Temporal CLI / Development Server)
+  # 官方镜像：单容器整合 Temporal Server 核心微服务 (Frontend/History/Matching/Worker) 与 Web UI
+  # 上游文档：https://github.com/temporalio/temporal | 镜像标签：temporalio/temporal:1.9.1
+  # ==============================================================================
+  temporal:
+    image: temporalio/temporal:1.9.1
+    container_name: temporal
+    restart: unless-stopped
+    command:
+      - server
+      - start-dev
+      - --ip=0.0.0.0
+      - --port=7233
+      - --ui-port=8233
+      - --db-filename=/etc/temporal/temporal.db
+      - --namespace=default
+      - --metrics-port=9090
+    ports:
+      - "7233:7233" # Temporal Frontend gRPC 端口 (供 SDK 客户端与 Worker 连接)
+      - "8233:8233" # Temporal Web UI 监控看板端口 (工作流执行历史追踪)
+    environment:
+      - TZ=${TIMEZONE:-Asia/Shanghai}
+      - TEMPORAL_CSRF_COOKIE_INSECURE=true # 允许在反代/HTTP 开发环境下正常使用 Web UI Cookie
+      - TEMPORAL_CLI_ADDRESS=127.0.0.1:7233 # 容器内 CLI 探针连接地址
+    volumes:
+      - ${DATA_PATH}temporal:/etc/temporal
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.2"
+          memory: 256M
+    networks:
+      - frontend # 供 Caddy 反向代理接入 Web UI (8233)
+      - backend  # 供内部服务/Worker 调度工作流 (7233)

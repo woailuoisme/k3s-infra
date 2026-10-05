@@ -1,0 +1,63 @@
+{{- if .Values.meilisearch.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: meilisearch
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      containers:
+      - name: meilisearch
+        image: "{{ .Values.meilisearch.image.repository }}:{{ .Values.meilisearch.image.tag }}"
+        imagePullPolicy: {{ .Values.meilisearch.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 7700
+        env:
+        - name: MEILI_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: meilisearch-secret
+              key: master-key
+        - name: MEILI_ENV
+          value: "production"
+        - name: TZ
+          value: {{ .Values.global.timezone }}
+        volumeMounts:
+        - name: data
+          mountPath: /meili_data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.meilisearch.resources | nindent 10 }}
+      volumes:
+      - name: data
+        {{- if .Values.meilisearch.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: meilisearch-data
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+{{- end }}

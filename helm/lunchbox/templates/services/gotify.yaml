@@ -1,0 +1,20 @@
+{{- if .Values.gotify.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotify
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: gotify
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.gotify.service.type }}
+  ports:
+  - port: {{ .Values.gotify.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: gotify
+{{- end }}

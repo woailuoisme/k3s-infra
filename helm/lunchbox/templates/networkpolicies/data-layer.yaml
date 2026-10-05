@@ -1,0 +1,205 @@
+{{- if .Values.networkPolicy.enabled }}
+---
+# PostgreSQL NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-netpol
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: postgres
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 允许来自 PHP 应用的连接
+  - from:
+    - podSelector:
+        matchLabels:
+          app: php-fpm
+    - podSelector:
+        matchLabels:
+          app: php-roadrunner
+    - podSelector:
+        matchLabels:
+          app: php-horizon
+    - podSelector:
+        matchLabels:
+          app: php-schedule
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # 允许 DNS 查询
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+
+---
+# Redis NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-netpol
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: redis
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 允许来自 PHP 应用的连接
+  - from:
+    - podSelector:
+        matchLabels:
+          app: php-fpm
+    - podSelector:
+        matchLabels:
+          app: php-roadrunner
+    - podSelector:
+        matchLabels:
+          app: php-horizon
+    - podSelector:
+        matchLabels:
+          app: php-schedule
+    - podSelector:
+        matchLabels:
+          app: php-reverb
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  # 允许 DNS 查询
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+
+---
+# Meilisearch NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: meilisearch-netpol
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: meilisearch
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: meilisearch
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 允许来自 PHP 应用的连接
+  - from:
+    - podSelector:
+        matchLabels:
+          app: php-fpm
+    - podSelector:
+        matchLabels:
+          app: php-roadrunner
+    ports:
+    - protocol: TCP
+      port: 7700
+  # 允许来自 Traefik Ingress 的连接
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: traefik
+    ports:
+    - protocol: TCP
+      port: 7700
+  egress:
+  # 允许 DNS 查询
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+
+---
+# MinIO NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: minio-netpol
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: minio
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: minio
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 允许来自 PHP 应用的连接（API）
+  - from:
+    - podSelector:
+        matchLabels:
+          app: php-fpm
+    - podSelector:
+        matchLabels:
+          app: php-roadrunner
+    ports:
+    - protocol: TCP
+      port: 9000
+  # 允许来自 Traefik Ingress 的连接（Console + API）
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: traefik
+    ports:
+    - protocol: TCP
+      port: 9000
+    - protocol: TCP
+      port: 9001
+  egress:
+  # 允许 DNS 查询
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # 允许访问外部（用于对象存储复制等）
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+
+{{- end }}

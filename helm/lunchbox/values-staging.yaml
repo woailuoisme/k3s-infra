@@ -1,0 +1,83 @@
+# 预发布环境配置
+
+global:
+  domain: staging.example.com
+
+# PHP-FPM - 预发布环境多副本
+phpFpm:
+  replicaCount: 2
+  image:
+    tag: staging
+
+# PHP RoadRunner
+phpRoadrunner:
+  replicaCount: 2
+  image:
+    tag: staging
+
+# PHP Horizon
+phpHorizon:
+  replicaCount: 1
+  image:
+    tag: staging
+
+# PHP Schedule
+phpSchedule:
+  replicaCount: 1
+  image:
+    tag: staging
+
+# PHP Reverb
+phpReverb:
+  replicaCount: 1
+  image:
+    tag: staging
+
+# PostgreSQL - 预发布环境中等规格
+postgresql:
+  persistence:
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Redis
+redis:
+  persistence:
+    size: 5Gi
+
+# Meilisearch
+meilisearch:
+  persistence:
+    size: 10Gi
+
+# MinIO
+minio:
+  persistence:
+    size: 50Gi
+
+# Ingress - 预发布环境域名
+ingress:
+  routes:
+    app:
+      host: staging.example.com
+    api:
+      host: api-staging.example.com
+    websocket:
+      host: ws-staging.example.com
+    minioConsole:
+      host: minio-staging.example.com
+    minioApi:
+      host: s3-staging.example.com
+    search:
+      host: search-staging.example.com
+    homepage:
+      host: home-staging.example.com
+    dozzle:
+      host: logs-staging.example.com
+    gotify:
+      host: notify-staging.example.com

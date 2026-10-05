@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lunchbox-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    environment: staging
+spec:
+  project: default
+  
+  source:
+    # 根据实际使用的 Git 仓库修改 repoURL
+    # GitHub: https://github.com/your-org/lunchbox.git
+    # Gitea: https://gitea.example.com/your-org/lunchbox.git
+    # Gitee: https://gitee.com/your-org/lunchbox.git
+    repoURL: https://github.com/your-org/lunchbox.git
+    targetRevision: staging  # 使用 staging 分支
+    path: k8s/helm/lunchbox
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lunchbox-staging
+  
+  syncPolicy:
+    automated:
+      prune: true       # 自动删除不再需要的资源
+      selfHeal: true    # 自动修复配置漂移
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # 忽略副本数差异（支持手动扩缩容）

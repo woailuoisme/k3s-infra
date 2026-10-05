@@ -1,0 +1,32 @@
+services:
+  imgproxy:
+    image: darthsim/imgproxy:v4
+    container_name: imgproxy
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${IMGPROXY_PORT:-8088}:8080"
+    environment:
+      - IMGPROXY_KEY=${IMGPROXY_KEY:-016bb66d0d40f8f746c0c327eca2232495bb367e90f5d0124329a0fea07c929b}
+      - IMGPROXY_SALT=${IMGPROXY_SALT:-07c466cebbed802f7b449c67dfad29f393df60f09ffbd2af47462f88791e3ab5}
+      # 是否允许未签名 URL 访问 (true: 允许通过 /insecure/... 路径访问，免去 HMAC 签名计算，适合本地调试开发)
+      - IMGPROXY_INSECURE_URLS=${IMGPROXY_INSECURE_URLS:-true}
+      # 开发错误调试模式 (处理失败时在响应 HTTP Header 及日志中输出详细错误堆栈与原因)
+      - IMGPROXY_DEVELOPMENT_ERRORS_MODE=${IMGPROXY_DEVELOPMENT_ERRORS_MODE:-true}
+      # 本地文件系统根目录 (允许配合 local:/// 协议直接读取挂载目录图片，如 local:///data/... 或 local:///www/...)
+      - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/mnt
+      - IMGPROXY_ENABLE_WEBP_DETECTION=${IMGPROXY_ENABLE_WEBP_DETECTION:-true}
+      - IMGPROXY_ENABLE_AVIF_DETECTION=${IMGPROXY_ENABLE_AVIF_DETECTION:-true}
+    volumes:
+      - ${DATA_PATH:-./data/}:/mnt/data:ro
+      - ${APP_CODE_PATH:-./}:/mnt/www:ro
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - frontend
+      - backend

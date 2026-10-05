@@ -1,0 +1,30 @@
+[tools]
+# --- 构建 & 任务 ---
+just = "latest"          # 任务运行器，Makefile 替代品
+
+# --- 代码质量 ---
+shellcheck = "latest"    # Shell 脚本静态分析
+shfmt = "latest"         # Shell 脚本格式化
+hadolint = "latest"      # Dockerfile lint
+actionlint = "latest"    # GitHub Actions workflow lint
+lefthook = "latest"      # Git hooks 管理
+
+# --- 文件搜索 ---
+fd = "latest"            # 快速文件查找，find 替代品
+fzf = "latest"           # 交互式模糊搜索
+ripgrep = "latest"       # 快速文本搜索，grep 替代品
+bat = "latest"           # 带语法高亮的文件查看，cat 替代品
+
+# --- 数据处理 ---
+jq = "latest"            # JSON 命令行处理
+yq = "latest"            # YAML/JSON/TOML 命令行处理
+
+# --- 网络调试 ---
+xh = "latest"            # 现代 HTTP 客户端，curl 替代品
+
+# --- Kubernetes ---
+kubectl = "latest"       # K8s 命令行工具
+helm = "latest"          # K8s 包管理器
+k9s = "latest"           # 终端 K8s 交互 UI
+kubectx = "latest"       # 快速切换 cluster / namespace
+stern = "latest"         # 多 pod 日志聚合

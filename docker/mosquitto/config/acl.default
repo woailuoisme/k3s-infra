@@ -1,0 +1,24 @@
+# ============================================================================
+# 生产环境默认访问控制列表 (ACL) 模板
+# ============================================================================
+
+# 管理员用户拥有对所有主题的完全访问权限
+user admin
+topic readwrite #
+topic readwrite $SYS/#
+
+# IoT 设备与租户隔离黄金模式 (%u 代表登录用户名, %c 代表 ClientID)
+# 任何配置在 MQTT_USERS 的账号，默认均能读写自己专属前缀的主题
+pattern readwrite %u/#
+pattern readwrite device/%u/#
+pattern readwrite devices/%c/#
+
+# 示例设备用户权限隔离 (设备仅能读写自己的 telemetry 主题)
+# user device_01
+# topic readwrite device/device_01/telemetry
+# topic read device/device_01/command
+
+# 示例只读监控账户
+# user monitor
+# topic read $SYS/#
+

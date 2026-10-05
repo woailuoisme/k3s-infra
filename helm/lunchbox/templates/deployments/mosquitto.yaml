@@ -1,0 +1,51 @@
+{{- if .Values.mosquitto.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: mosquitto
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mosquitto
+  template:
+    metadata:
+      labels:
+        app: mosquitto
+    spec:
+      containers:
+      - name: mosquitto
+        image: "{{ .Values.mosquitto.image.repository }}:{{ .Values.mosquitto.image.tag }}"
+        imagePullPolicy: {{ .Values.mosquitto.image.pullPolicy }}
+        ports:
+        - name: mqtt
+          containerPort: 1883
+          protocol: TCP
+        - name: websocket
+          containerPort: 9001
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /mosquitto/config/mosquitto.conf
+          subPath: mosquitto.conf
+        {{- if .Values.mosquitto.persistence.enabled }}
+        - name: data
+          mountPath: /mosquitto/data
+        {{- end }}
+        resources:
+          {{- toYaml .Values.mosquitto.resources | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: mosquitto-config
+      {{- if .Values.mosquitto.persistence.enabled }}
+      - name: data
+        persistentVolumeClaim:
+          claimName: mosquitto-data
+      {{- end }}
+{{- end }}

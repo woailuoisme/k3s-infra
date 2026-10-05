@@ -1,0 +1,32 @@
+# ==============================================================================
+# Traefik v3 Dashboard 仪表盘路由配置 (Dashboard Router)
+# ==============================================================================
+
+http:
+  routers:
+    # --------------------------------------------------------------------------
+    # 1. HTTPS Dashboard 路由 (Host 规则采用 Go 模板读取 SITE_ADDRESS)
+    # --------------------------------------------------------------------------
+    traefik-dashboard:
+      rule: 'Host(`traefik.{{ env "SITE_ADDRESS" }}`)'
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls: {}
+      middlewares:
+        - security-headers
+        - compress
+        # 如需强制开启账号密码认证，解开下一行即可启用 basicAuth 中间件：
+        # - dashboard-auth
+
+    # --------------------------------------------------------------------------
+    # 2. HTTP Dashboard 路由 (配合 web 入口重定向或本地直连)
+    # --------------------------------------------------------------------------
+    traefik-dashboard-http:
+      rule: 'Host(`traefik.{{ env "SITE_ADDRESS" }}`)'
+      entryPoints:
+        - web
+      service: api@internal
+      middlewares:
+        - security-headers
+        - compress

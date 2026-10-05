@@ -1,0 +1,16 @@
+# ==============================================================================
+# CrowdSec 自定义白名单配置 (Custom Whitelists Parser)
+# 作用: 绝对豁免私有网络与本地回环流量，避免本地开发调试与微服务间调用被误封
+# ==============================================================================
+name: lunchbox/custom-whitelists
+description: "Whitelist private IP ranges, local loopback, and development subnets"
+whitelist:
+  reason: "Private network and local loopback whitelist"
+  ip:
+    - "127.0.0.1"
+    - "::1"
+  cidr:
+    - "127.0.0.0/8"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"

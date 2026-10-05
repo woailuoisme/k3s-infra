@@ -1,0 +1,34 @@
+{{- if .Values.meilisearch.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: meilisearch
+spec:
+  type: {{ .Values.meilisearch.service.type }}
+  ports:
+  - name: http
+    port: {{ .Values.meilisearch.service.port }}
+    targetPort: http
+  selector:
+    app: meilisearch
+---
+{{- if .Values.meilisearch.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meilisearch-data
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.meilisearch.persistence.storageClass }}
+  storageClassName: {{ .Values.meilisearch.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.meilisearch.persistence.size }}
+{{- end }}
+{{- end }}

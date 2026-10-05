@@ -1,0 +1,37 @@
+services:
+  centrifugo:
+    build:
+      context: .
+    container_name: centrifugo
+    command: centrifugo -c /centrifugo/config.yaml
+    ports:
+      - "48000:8000"
+    volumes:
+      - ${CONFIG_PATH}messaging/centrifugo:/centrifugo
+    environment:
+      # 默认使用 redis 引擎，但可以在开发环境的 .env 中通过 CENTRIFUGO_ENGINE_TYPE 设定为 memory
+      - CENTRIFUGO_ENGINE_TYPE=${CENTRIFUGO_ENGINE_TYPE:-redis}
+      # 基础秘钥与凭证
+      - CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY=${CENTRIFUGO_TOKEN_HMAC_SECRET_KEY}
+      - CENTRIFUGO_HTTP_API_KEY=${CENTRIFUGO_API_KEY}
+      - CENTRIFUGO_ADMIN_PASSWORD=${CENTRIFUGO_ADMIN_PASSWORD}
+      - CENTRIFUGO_ADMIN_SECRET=${CENTRIFUGO_ADMIN_SECRET}
+      # Redis 引擎的 Valkey 连接地址
+      - CENTRIFUGO_ENGINE_REDIS_ADDRESS=redis://:${REDIS_PASSWORD}@valkey:6379/0
+      # CORS 允许的域：从 .env 中的 CENTRIFUGO_ALLOWED_ORIGINS 映射为 JSON 格式数组
+      - CENTRIFUGO_CLIENT_ALLOWED_ORIGINS=["${CENTRIFUGO_ALLOWED_ORIGINS:-*}"]
+      # 日志等级：允许通过环境变量修改
+      - CENTRIFUGO_LOG_LEVEL=${CENTRIFUGO_LOG_LEVEL:-info}
+      # 匿名连接控制：开发环境默认为 true，生产环境可在 .env 中重写为 false
+      - CENTRIFUGO_CLIENT_ALLOW_ANONYMOUS_CONNECT_WITHOUT_TOKEN=${CENTRIFUGO_ALLOW_ANONYMOUS_CONNECT_WITHOUT_TOKEN:-false}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    restart: always
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      valkey:
+        condition: service_healthy

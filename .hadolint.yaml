@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=none
+# hadolint configuration
+# https://github.com/hadolint/hadolint
+
+# 失败阈值：error / warning / info / style / ignore / none
+# warning 级别也作为 lint 失败处理；不适合本仓库的规则在 ignored 中显式说明。
+failure-threshold: warning
+
+# 全局忽略规则
+ignored:
+  # 开发镜像依赖发行版滚动仓库，包级 pin 需要快照源配套，否则维护成本高且容易失效。
+  - DL3008  # Pin versions in apt-get install
+  - DL3018  # Pin versions in apk add
+  - DL3013  # Pin versions in pip install
+  # 部分上游镜像以 latest 作为发布通道，版本由 ARG 或上游仓库策略控制。
+  - DL3007  # Using latest is best avoided
+  # BuildKit 支持 COPY --from=<external image>，本仓库允许该模式。
+  - DL3022  # COPY --from should reference a previously defined FROM alias
+  # 管道失败语义按具体 Dockerfile 逐步收紧，不作为全局阻断。
+  - DL4006  # Set SHELL -o pipefail before RUN with a pipe
+  # 本仓库主要用于本地开发与运维基础设施，允许在 ENV/ARG 中提供默认密码与敏感配置项。
+  - DL3064  # Potentially sensitive data should not be used in the ARG or ENV commands
+  # 允许使用非数字用户名/组名（如 USER root、USER www-data）
+  - DL3066  # Non-numeric user-id may not be resolvable by host system
+  # 允许显式切换为 root 用户（常见于基础镜像基于非 root 时安装依赖与权限初始化）
+  - DL3002  # Last USER should not be root
+  # ShellCheck 集成：允许常见的 Dockerfile Shell 脚本模式
+  - SC2015  # 允许 A && B || C 模式（常见于 Dockerfile RUN）
+  - SC2046  # Dockerfile RUN 中常见有意的命令展开
+  # 以下是低价值结构建议：本仓库大量使用 BuildKit cache mount 和可读性分层，保留现状。
+  - DL3009  # Delete apt lists after installing something
+  - DL3059  # Multiple consecutive RUN instructions
+
+# 信任的镜像仓库（来自这些仓库的镜像不触发 DL3007）
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - quay.io
+  - registry.hub.docker.com
+
+# 标签规范（可选，按需启用）
+# label-schema:
+#   maintainer:
+#     description: "Image maintainer"
+#     type: string

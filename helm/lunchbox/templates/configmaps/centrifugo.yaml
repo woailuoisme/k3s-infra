@@ -1,0 +1,25 @@
+{{- if .Values.centrifugo.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: centrifugo-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: centrifugo
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  config.json: |
+    {
+      "admin": true,
+      "admin_insecure": false,
+      "allowed_origins": ["*"],
+      "publish": true,
+      "subscribe_to_publish": true,
+      "presence": true,
+      "join_leave": true,
+      "history_size": 10,
+      "history_ttl": "300s",
+      "force_recovery": true
+    }
+{{- end }}

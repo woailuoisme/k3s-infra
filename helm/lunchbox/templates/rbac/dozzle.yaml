@@ -1,0 +1,47 @@
+{{- if and .Values.dozzle.enabled .Values.dozzle.rbac.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dozzle
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: dozzle
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dozzle
+  labels:
+    app: dozzle
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dozzle
+  labels:
+    app: dozzle
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dozzle
+subjects:
+- kind: ServiceAccount
+  name: dozzle
+  namespace: {{ .Values.namespace }}
+{{- end }}

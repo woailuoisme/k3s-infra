@@ -1,0 +1,10 @@
+# ==============================================================================
+# 安全防护、主机入侵防御与合规审计平台 (Security & Compliance Stack)
+# ==============================================================================
+# include:
+  # --- 入侵检测与应用防火墙 (IDS & AppSec WAF) ---
+  # - crowdsec/docker-compose.yml           # CrowdSec 自动化入侵防御与 AppSec WAF 引擎
+  # - fail2ban/docker-compose.yml           # Fail2ban 容器化安全防护与恶意 IP 封禁网关 (Linux iptables DOCKER-USER 链)
+
+  # --- 漏洞扫描与安全合规 (Security Vulnerability & Compliance Scanner) ---
+  # - trivy/docker-compose.yml              # Aqua Security Trivy 容器镜像、IaC 配置与依赖组件漏洞扫描引擎

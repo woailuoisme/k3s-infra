@@ -1,0 +1,12 @@
+{
+  "type": "gitee",
+  "config": {
+    "url": "https://argocd.example.com/api/webhook",
+    "password": "your-webhook-secret-here",
+    "encryption_type": "0"
+  },
+  "events": [
+    "push"
+  ],
+  "active": true
+}

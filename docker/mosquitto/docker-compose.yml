@@ -1,0 +1,29 @@
+services:
+  mosquitto:
+    build:
+      context: .
+    container_name: mosquitto
+    restart: always
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+    volumes:
+      - ${CONFIG_PATH}iot/mosquitto/config:/mosquitto/config
+      - ${DATA_PATH}mosquitto/data:/mosquitto/data
+    environment:
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USERS=${MQTT_USERS}
+      - MQTT_ALLOW_ANONYMOUS=${MQTT_ALLOW_ANONYMOUS:-false}
+      - SITE_ADDRESS=${SITE_ADDRESS}
+    networks:
+      - backend
+      - frontend
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M

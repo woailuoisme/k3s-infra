@@ -1,0 +1,20 @@
+{{- if .Values.dozzle.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: dozzle
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: dozzle
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.dozzle.service.type }}
+  ports:
+  - port: {{ .Values.dozzle.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: dozzle
+{{- end }}

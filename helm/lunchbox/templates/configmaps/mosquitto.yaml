@@ -1,0 +1,36 @@
+{{- if .Values.mosquitto.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: mosquitto
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  mosquitto.conf: |
+    # Mosquitto 配置文件
+    
+    # 持久化配置
+    persistence true
+    persistence_location /mosquitto/data/
+    
+    # 日志配置
+    log_dest stdout
+    log_type all
+    
+    # MQTT 监听器
+    listener 1883
+    protocol mqtt
+    
+    # WebSocket 监听器
+    listener 9001
+    protocol websockets
+    
+    # 允许匿名访问（生产环境建议启用认证）
+    allow_anonymous true
+    
+    # 最大连接数
+    max_connections -1
+{{- end }}

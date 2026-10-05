@@ -1,0 +1,14 @@
+{
+  "type": "gitea",
+  "config": {
+    "url": "https://argocd.example.com/api/webhook",
+    "content_type": "json",
+    "secret": "your-webhook-secret-here",
+    "http_method": "POST"
+  },
+  "events": [
+    "push"
+  ],
+  "active": true,
+  "branch_filter": "*"
+}

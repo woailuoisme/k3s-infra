@@ -1,0 +1,74 @@
+{{- if .Values.authelia.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authelia
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: authelia
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.authelia.replicaCount }}
+  selector:
+    matchLabels:
+      app: authelia
+  template:
+    metadata:
+      labels:
+        app: authelia
+    spec:
+      containers:
+      - name: authelia
+        image: "{{ .Values.authelia.image.repository }}:{{ .Values.authelia.image.tag }}"
+        imagePullPolicy: {{ .Values.authelia.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 9091
+          protocol: TCP
+        env:
+        - name: DOMAIN
+          value: {{ .Values.global.domain | quote }}
+        - name: RESEND_USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: authelia-secret
+              key: resend-username
+        - name: RESEND_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: authelia-secret
+              key: resend-api-key
+        volumeMounts:
+        - name: config
+          mountPath: /config/configuration.yml
+          subPath: configuration.yml
+        - name: users
+          mountPath: /config/users_database.yml
+          subPath: users_database.yml
+        - name: data
+          mountPath: /config
+        resources:
+          {{- toYaml .Values.authelia.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: authelia-config
+      - name: users
+        configMap:
+          name: authelia-users
+      - name: data
+        emptyDir: {}
+{{- end }}

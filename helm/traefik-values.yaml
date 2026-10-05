@@ -1,0 +1,188 @@
+# Traefik Ingress Controller 配置
+# 用于: helm install traefik traefik/traefik -f traefik-values.yaml
+
+# 全局配置
+globalArguments:
+  - "--global.checknewversion=false"
+  - "--global.sendanonymoususage=false"
+
+# 健康检查
+# 使用 deployment 级别的配置
+deployment:
+  enabled: true
+  kind: Deployment
+  replicas: 2  # 高可用
+  
+  # 健康检查路径
+  readinessPath: /ping
+  livenessPath: /ping
+  
+  # Pod 反亲和性，确保副本分布在不同节点
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - traefik
+          topologyKey: kubernetes.io/hostname
+
+# 入口点配置
+ports:
+  web:
+    port: 8000
+    expose:
+      default: true
+    exposedPort: 80
+    protocol: TCP
+    # HTTP 自动重定向到 HTTPS
+    redirections:
+      entryPoint:
+        to: websecure
+        scheme: https
+  
+  websecure:
+    port: 8443
+    expose:
+      default: true
+    exposedPort: 443
+    protocol: TCP
+    tls:
+      enabled: true
+      # 使用 Let's Encrypt
+      certResolver: letsencrypt
+  
+  # Traefik Dashboard
+  traefik:
+    port: 9000
+    expose:
+      default: false
+    protocol: TCP
+  
+  # Prometheus Metrics
+  metrics:
+    port: 9100
+    expose:
+      default: false
+    protocol: TCP
+
+# Service 配置
+service:
+  enabled: true
+  type: LoadBalancer  # 或 NodePort，根据集群环境选择
+  # type: NodePort
+  # nodePorts:
+  #   web: 30080
+  #   websecure: 30443
+
+
+# Providers 配置
+providers:
+  # Kubernetes CRD Provider (IngressRoute)
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+  
+  # Kubernetes Ingress Provider (标准 Ingress)
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+    publishedService:
+      enabled: true
+
+# Let's Encrypt 证书配置
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@example.com  # 修改为你的邮箱
+      storage: /data/acme.json
+      # 使用 TLS Challenge
+      tlsChallenge: true
+      # 或使用 HTTP Challenge
+      # httpChallenge:
+      #   entryPoint: web
+      # 或使用 DNS Challenge (需要配置 DNS Provider)
+      # dnsChallenge:
+      #   provider: cloudflare
+      #   resolvers:
+      #     - "1.1.1.1:53"
+      #     - "8.8.8.8:53"
+      
+      # 使用 Let's Encrypt Staging 环境进行测试
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+
+# 持久化存储 (用于存储 ACME 证书)
+persistence:
+  enabled: true
+  name: traefik-data
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  # 使用默认 StorageClass (local-path)
+  # storageClass: ""  # 留空使用默认
+  path: /data
+
+# 日志配置
+logs:
+  general:
+    level: INFO  # DEBUG, INFO, WARN, ERROR
+  access:
+    enabled: true
+    format: json
+    fields:
+      defaultMode: keep
+      headers:
+        defaultMode: drop
+
+# Metrics 配置
+metrics:
+  prometheus:
+    enabled: true
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+
+# Dashboard 配置
+ingressRoute:
+  dashboard:
+    enabled: true
+    # 通过 IngressRoute 暴露 Dashboard
+    matchRule: Host(`traefik.example.com`)  # 修改为你的域名
+    entryPoints:
+      - websecure
+    # 添加认证中间件
+    middlewares:
+      - name: dashboard-auth
+        namespace: traefik
+
+# 资源限制
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# 安全上下文
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+
+podSecurityContext:
+  fsGroup: 65532
+
+# 环境变量
+env:
+  - name: TZ
+    value: Asia/Shanghai
+

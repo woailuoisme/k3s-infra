@@ -1,0 +1,35 @@
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: minio
+    service: api
+spec:
+  type: {{ .Values.minio.service.api.type }}
+  ports:
+  - name: api
+    port: {{ .Values.minio.service.api.port }}
+    targetPort: api
+  selector:
+    app: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: minio
+    service: console
+spec:
+  type: {{ .Values.minio.service.console.type }}
+  ports:
+  - name: console
+    port: {{ .Values.minio.service.console.port }}
+    targetPort: console
+  selector:
+    app: minio
+{{- end }}

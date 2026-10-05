@@ -1,0 +1,141 @@
+# 生产环境配置
+
+global:
+  domain: example.com
+
+# PHP-FPM - 生产环境高可用
+phpFpm:
+  replicaCount: 3
+  image:
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# PHP RoadRunner
+phpRoadrunner:
+  replicaCount: 3
+  image:
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# PHP Horizon
+phpHorizon:
+  replicaCount: 2
+  image:
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# PHP Schedule
+phpSchedule:
+  replicaCount: 1
+  image:
+    tag: latest
+    pullPolicy: Always
+
+# PHP Reverb
+phpReverb:
+  replicaCount: 2
+  image:
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# PostgreSQL - 生产环境大规格
+postgresql:
+  persistence:
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+# Redis - 生产环境
+redis:
+  persistence:
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Meilisearch
+meilisearch:
+  persistence:
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# MinIO
+minio:
+  persistence:
+    size: 100Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Ingress - 生产环境域名
+ingress:
+  routes:
+    app:
+      host: app.example.com
+    api:
+      host: api.example.com
+    websocket:
+      host: ws.example.com
+    minioConsole:
+      host: minio.example.com
+    minioApi:
+      host: s3.example.com
+    search:
+      host: search.example.com
+    homepage:
+      host: home.example.com
+    dozzle:
+      host: logs.example.com
+    gotify:
+      host: notify.example.com
+
+# 网络策略 - 生产环境启用
+networkPolicy:
+  enabled: true

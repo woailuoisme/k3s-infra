@@ -1,0 +1,49 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: validate docker-compose
+      glob:
+        - "docker-compose.yml"
+        - "**/docker-compose.yml"
+        - ".env.example"
+      run: just lint-compose
+
+    - name: validate caddyfile
+      glob:
+        - "gateways/caddy/Caddyfile"
+        - "gateways/caddy/templates/*.conf"
+        - "gateways/caddy/snippets/*.conf"
+        - "gateways/caddy/sites/*"
+        - "gateways/caddy/Dockerfile"
+        - "gateways/caddy/docker-compose.yml"
+      run: just lint-caddy
+
+    - name: hadolint
+      glob:
+        - "**/Dockerfile"
+        - "**/Dockerfile.*"
+      run: hadolint {staged_files}
+
+    - name: shellcheck
+      glob:
+        - "**/*.sh"
+      run: shellcheck --severity=warning {staged_files}
+
+    - name: shfmt
+      glob:
+        - "**/*.sh"
+      run: shfmt -w {staged_files}
+      stage_fixed: true
+
+    - name: actionlint
+      glob:
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+      run: actionlint {staged_files}
+
+    - name: rumdl
+      glob:
+        - "**/*.md"
+      run: rumdl fmt {staged_files}
+      stage_fixed: true
+
