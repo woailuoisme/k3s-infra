@@ -8,8 +8,7 @@
 creation_rules:
   # 匹配所有以 .enc.yaml 或 .enc.yml 结尾的文件
   - path_regex: .*\.enc\.ya?ml$
-    # 替换为您本地通过 age-keygen 生成的真实公钥 (age1...)
-    # 示例: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
-    age: "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"
+    # 本地 age 密钥公钥
+    age: "age1w5y9vj3stvw67zex90rwm45l08qen2g7nc5d0w96w5pz96fwa3asdds9wm"
     # 加密除 metadata/name/namespace/kind/apiVersion 外的所有敏感值 (可自定义)
     encrypted_regex: "^(data|stringData|secrets|.*_password|.*_secret|.*_key)$"
