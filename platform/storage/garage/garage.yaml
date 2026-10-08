@@ -101,6 +101,7 @@ metadata:
   name: garage
   namespace: storage
 spec:
+  publishNotReadyAddresses: true
   selector:
     app: garage
   ports:
