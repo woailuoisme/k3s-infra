@@ -13,7 +13,7 @@ spec:
     # 1. 官方 Traefik Helm Chart 仓库
     - repoURL: https://traefik.github.io/charts
       chart: traefik
-      targetRevision: 34.4.1
+      targetRevision: 41.7.0
       helm:
         releaseName: traefik
         valueFiles:

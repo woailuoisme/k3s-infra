@@ -12,7 +12,7 @@ spec:
   sources:
     - repoURL: https://meilisearch.github.io/meilisearch-kubernetes
       chart: meilisearch
-      targetRevision: 0.13.0
+      targetRevision: 0.40.0
       helm:
         releaseName: meilisearch
         valueFiles:

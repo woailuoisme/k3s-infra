@@ -148,14 +148,14 @@ spec:
               value: "Asia/Shanghai"
             - name: CENTRIFUGO_ENGINE_TYPE
               value: "redis"
-            - name: CENTRIFUGO_ENGINE_REDIS_ADDRESS
-              value: "redis://:$(REDIS_PASSWORD)@valkey-primary.database.svc:6379/0"
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: valkey-secret
                   key: password
                   optional: true
+            - name: CENTRIFUGO_ENGINE_REDIS_ADDRESS
+              value: "redis://:$(REDIS_PASSWORD)@valkey-primary.database.svc:6379/0"
             - name: CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY
               valueFrom:
                 secretKeyRef:

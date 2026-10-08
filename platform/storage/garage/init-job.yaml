@@ -50,13 +50,13 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init
-          image: bitnami/kubectl:1.32.2
+          image: alpine/k8s:1.32.2
           imagePullPolicy: IfNotPresent
           env:
             - name: GARAGE_DEFAULT_ACCESS_KEY
-              value: "GK_replace_with_garage_access_key"
+              value: "GKfd16f76e81fb861a868a01b9b19452ad"
             - name: GARAGE_DEFAULT_SECRET_KEY
-              value: "replace_with_garage_secret_key_hex_64_chars"
+              value: "18d5eda476ff7fb88f0bec38eae3a5e468020ae6dfc610defe2f3f72a65c4339"
           command:
             - /bin/sh
             - -c
@@ -95,7 +95,7 @@ spec:
 
               echo "[Garage Init] Ensuring buckets and permissions..."
               EXISTING_BUCKETS=$(kubectl exec -n storage garage-0 -c garage -- /garage bucket list 2>/dev/null || true)
-              for BUCKET in default bgin; do
+              for BUCKET in default bgin postgres-backups; do
                 if echo "${EXISTING_BUCKETS}" | grep -qw "${BUCKET}"; then
                   echo "[Garage Init] Bucket '${BUCKET}' already exists."
                 else
@@ -104,7 +104,7 @@ spec:
                 fi
 
                 echo "[Garage Init] Granting permissions on '${BUCKET}' to key 'default'..."
-                if [ "${BUCKET}" = "bgin" ]; then
+                if [ "${BUCKET}" = "bgin" ] || [ "${BUCKET}" = "postgres-backups" ]; then
                   kubectl exec -n storage garage-0 -c garage -- /garage bucket allow "${BUCKET}" --key default --read --write --owner || true
                 else
                   kubectl exec -n storage garage-0 -c garage -- /garage bucket allow "${BUCKET}" --key default --read --write || true

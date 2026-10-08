@@ -32,6 +32,10 @@ spec:
 
   # PostgreSQL 18 参数针对 8GB 节点的精准调优
   postgresql:
+    shared_preload_libraries:
+      - timescaledb
+      - pg_cron
+      - pg_stat_statements
     parameters:
       shared_buffers: "256MB"
       work_mem: "16MB"
@@ -40,7 +44,6 @@ spec:
       max_connections: "100"
       timezone: "Asia/Shanghai"
       wal_compression: "on"
-      shared_preload_libraries: "timescaledb,pg_cron,pg_stat_statements"
       "cron.database_name": "postgres"
       "cron.timezone": "Asia/Shanghai"
       max_worker_processes: "8"

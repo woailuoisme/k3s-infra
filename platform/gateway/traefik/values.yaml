@@ -26,11 +26,12 @@ ports:
       default: true
     exposedPort: 80
     hostPort: 80
-    redirections:
-      entryPoint:
-        to: websecure
-        scheme: https
-        permanent: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
 
   # HTTPS 入口 (开启 HTTP/3)
   websecure:
@@ -163,13 +164,13 @@ experimental:
 # ------------------------------------------------------------------------------
 # 日志与指标
 # ------------------------------------------------------------------------------
-logs:
-  general:
-    level: INFO
-  access:
-    enabled: true
-    format: json
-    bufferingSize: 100
+log:
+  level: INFO
+
+accessLog:
+  enabled: true
+  format: json
+  bufferingSize: 100
 
 metrics:
   prometheus:

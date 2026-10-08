@@ -21,12 +21,8 @@ persistence:
   size: 10Gi
 
 # 生产环境运行模式
-environment: production
-
-# 主密钥 (由 Helm Chart 自动创建 Secret)
-auth:
-  createMasterKeySecret: true
-  masterKey: "bWaV7Z_2LHrn-t1LIJc3ENDT7R-svZ5tNMsuTifQfX0"
-
-# 日志输出精简
-logLevel: INFO
+environment:
+  MEILI_ENV: "production"
+  MEILI_NO_ANALYTICS: "true"
+  MEILI_MASTER_KEY: "bWaV7Z_2LHrn-t1LIJc3ENDT7R-svZ5tNMsuTifQfX0"
+  MEILI_LOG_LEVEL: "INFO"

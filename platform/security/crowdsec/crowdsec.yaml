@@ -22,9 +22,10 @@ metadata:
 data:
   traefik.yaml: |
     # 采集 Traefik 访问日志或通过 AppSec 协议监听
-    appsec:
-      listen_addr: 0.0.0.0:7422
     source: appsec
+    listen_addr: 0.0.0.0:7422
+    appsec_configs:
+      - crowdsecurity/appsec-default
     labels:
       type: appsec
 ---
@@ -69,6 +70,8 @@ spec:
               value: "true"
             - name: COLLECTIONS
               value: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/whitelist-good-actors crowdsecurity/base-http-scenarios crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
+            - name: APPSEC_CONFIGS
+              value: "crowdsecurity/appsec-default"
             - name: BOUNCER_KEY_traefik
               valueFrom:
                 secretKeyRef:

@@ -52,7 +52,7 @@ metadata:
 type: Opaque
 stringData:
   passwd: |
-    admin:$6$abcdef12$T.s3jT57PTynWF/ZEqMufJlJqoPSkAtC4c8RAq./GJdI8COI3y.trzltNypAgXD8LgxEKDL7P6xy626ckRJDM0
+    admin:$7$1000$GvL/H8K+lvCBJcLEMxVzDQ6m3cETsRysJKFxX7VhEnTOK5A6tKYOHl0/G+fk4ilbWdrA+B9/WXyLqSf13FffqQ==$r7KDHuKZvSpqSsR8Vr3YpImrRpLUgHMPBm+BbKA0hxzI8tcCTLd3A4uxhZ7DgvWT4dIxEBoSO/rY/v8gwMRWfQ==
 ---
 apiVersion: apps/v1
 kind: StatefulSet

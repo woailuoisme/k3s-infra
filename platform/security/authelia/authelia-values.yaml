@@ -2,21 +2,29 @@
 # Authelia 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
 # ==============================================================================
 
-replicaCount: 1
-
-priorityClassName: "platform-standard"
-
-resources:
-  requests:
-    cpu: 50m
-    memory: 64Mi
-  limits:
-    cpu: 300m
-    memory: 128Mi
+pod:
+  kind: "Deployment"
+  replicas: 1
+  priorityClassName: "platform-standard"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 128Mi
+  extraVolumes:
+    - name: users-database
+      configMap:
+        name: authelia-users
+  extraVolumeMounts:
+    - name: users-database
+      mountPath: /config/users_database.yml
+      subPath: users_database.yml
+      readOnly: true
 
 configMap:
   theme: light
-  default_redirection_url: "https://auth.mso.lol"
   server:
     buffers:
       read: 4096
@@ -24,6 +32,10 @@ configMap:
 
   # 会话存储对接内网 Valkey
   session:
+    cookies:
+      - domain: "mso.lol"
+        subdomain: "auth"
+        default_redirection_url: "https://auth.mso.lol"
     redis:
       host: "valkey-primary.database.svc"
       port: 6379
@@ -32,8 +44,8 @@ configMap:
   # 持久化存储对接内网 CloudNative-PG Postgres
   storage:
     postgres:
-      host: "postgres-cluster-rw.database.svc"
-      port: 5432
+      enabled: true
+      address: "tcp://postgres-cluster-rw.database.svc:5432"
       database: "authelia"
       username: "app"
 
@@ -58,18 +70,6 @@ configMap:
         policy: one_factor
         subject:
           - "group:admin"
-
-# 额外卷挂载，用于挂载 users_database.yml
-extraVolumes:
-  - name: users-database
-    configMap:
-      name: authelia-users
-
-extraVolumeMounts:
-  - name: users-database
-    mountPath: /config/users_database.yml
-    subPath: users_database.yml
-    readOnly: true
 
 # 敏感密钥绑定集群内部 Secret (由 SOPS 解密注入)
 secret:
