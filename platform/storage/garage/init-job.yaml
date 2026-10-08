@@ -37,7 +37,7 @@ metadata:
   name: garage-init
   namespace: storage
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 600
@@ -62,8 +62,9 @@ spec:
             - -c
             - |
               set -e
-              echo "[Garage Init] Waiting for Garage Pod to become ready..."
-              kubectl wait --for=condition=ready pod/garage-0 -n storage --timeout=180s
+              echo "[Garage Init] Waiting for Garage Pod to become running..."
+              kubectl wait --for=jsonpath='{.status.phase}'=Running pod/garage-0 -n storage --timeout=180s
+              sleep 5
 
               echo "[Garage Init] Checking Garage cluster status..."
               kubectl exec -n storage garage-0 -c garage -- /garage status

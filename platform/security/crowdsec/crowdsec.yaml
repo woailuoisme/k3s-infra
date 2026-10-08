@@ -93,7 +93,8 @@ spec:
             - name: data
               mountPath: /var/lib/crowdsec/data
             - name: acquis
-              mountPath: /etc/crowdsec/acquis.d
+              mountPath: /etc/crowdsec/acquis.d/traefik.yaml
+              subPath: traefik.yaml
       volumes:
         - name: data
           persistentVolumeClaim:

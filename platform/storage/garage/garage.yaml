@@ -77,9 +77,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 3903
+            tcpSocket:
+              port: 3901
             initialDelaySeconds: 15
             periodSeconds: 20
       volumes:

@@ -25,6 +25,7 @@ ports:
     expose:
       default: true
     exposedPort: 80
+    hostPort: 80
     redirections:
       entryPoint:
         to: websecure
@@ -37,6 +38,7 @@ ports:
     expose:
       default: true
     exposedPort: 443
+    hostPort: 443
     http3:
       enabled: true
 
@@ -52,7 +54,17 @@ ports:
     expose:
       default: true
     exposedPort: 1883
+    hostPort: 1883
     protocol: TCP
+
+# ------------------------------------------------------------------------------
+# 单机 K3s 禁用 ServiceLB 环境下的 Service 配置 (避免 LoadBalancer 挂起 Progressing)
+# ------------------------------------------------------------------------------
+service:
+  enabled: true
+  single: true
+  spec:
+    type: ClusterIP
 
 # ------------------------------------------------------------------------------
 # 证书存储与 Let's Encrypt ACME 原生签发

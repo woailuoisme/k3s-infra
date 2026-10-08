@@ -52,8 +52,7 @@ metadata:
 type: Opaque
 stringData:
   passwd: |
-    # 默认初始账户: admin / admin123 (生产可通过 SOPS + Age 加密)
-    admin:$7$101$zR8V05s2GZ+Bf6N0$9f6b4iRzEaZJ2hK
+    admin:$6$abcdef12$T.s3jT57PTynWF/ZEqMufJlJqoPSkAtC4c8RAq./GJdI8COI3y.trzltNypAgXD8LgxEKDL7P6xy626ckRJDM0
 ---
 apiVersion: apps/v1
 kind: StatefulSet

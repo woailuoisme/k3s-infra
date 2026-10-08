@@ -12,7 +12,7 @@ spec:
   sources:
     - repoURL: registry-1.docker.io/bitnamicharts
       chart: valkey
-      targetRevision: 0.10.2
+      targetRevision: 6.3.4
       helm:
         releaseName: valkey
         valueFiles:

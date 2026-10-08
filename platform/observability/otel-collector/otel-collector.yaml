@@ -91,7 +91,7 @@ spec:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.162.0
           imagePullPolicy: IfNotPresent
-          command:
+          args:
             - "--config=/etc/otelcol-contrib/config.yaml"
           ports:
             - name: otlp-grpc
