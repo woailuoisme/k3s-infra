@@ -35,7 +35,6 @@ configMap:
     cookies:
       - domain: "mso.lol"
         subdomain: "auth"
-        default_redirection_url: "https://auth.mso.lol"
     redis:
       host: "valkey-primary.database.svc"
       port: 6379
@@ -52,11 +51,18 @@ configMap:
   # 认证用户源 (文件后端，挂载 authelia-users ConfigMap)
   authentication_backend:
     file:
+      enabled: true
       path: /config/users_database.yml
       watch: true
       search:
         email: true
         case_insensitive: true
+
+  # 通知后端 (轻量文件通知)
+  notifier:
+    filesystem:
+      enabled: true
+      filename: /config/notification.txt
 
   # 统一访问控制策略 (ACL - 对齐生产)
   access_control:
