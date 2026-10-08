@@ -18,19 +18,14 @@ render app="bgin":
     @kubectl kustomize apps/{{app}}
 template app="bgin": (render app)
 
-# 本地构建镜像并导入 K3s containerd
-build target="postgres":
-    @case "{{target}}" in \
-        postgres) \
-            docker build -t ghcr.io/woailuoisme/postgres-multimodal:18 platform/database/postgres/ ;; \
-        *) \
-            echo "Unknown build target: {{target}}"; exit 1 ;; \
-    esac
+# 导入预构建镜像到 K3s containerd (默认: jiaoio/postgres:18-trixie)
+import-image image="jiaoio/postgres:18-trixie":
     @if command -v k3s >/dev/null 2>&1; then \
-        echo "Importing {{target}} image into K3s containerd..."; \
-        docker save ghcr.io/woailuoisme/postgres-multimodal:18 | sudo k3s ctr images import - ; \
+        echo "Importing {{image}} into K3s containerd..."; \
+        k3s ctr images pull {{image}} ; \
+    else \
+        echo "k3s not found locally. Use docker or pull directly on remote node: k3s ctr images pull {{image}}"; \
     fi
-build-postgres-cnpg: (build "postgres")
 
 # 引导启动 ArgoCD 根应用 (App-of-Apps)
 bootstrap:

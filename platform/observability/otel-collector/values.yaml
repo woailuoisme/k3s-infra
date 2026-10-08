@@ -1,0 +1,101 @@
+# ==============================================================================
+# OpenTelemetry Collector 官方 Helm Values (对接 OpenObserve，针对 4C8G 极致轻量)
+# ==============================================================================
+mode: "deployment"
+fullnameOverride: "otel-collector"
+
+image:
+  repository: "otel/opentelemetry-collector-contrib"
+
+priorityClassName: "observability-low"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 300m
+    memory: 128Mi
+
+extraEnvs:
+  - name: O2_AUTH
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-secrets
+        key: auth-token
+        optional: true
+
+config:
+  extensions:
+    health_check:
+      endpoint: 0.0.0.0:13133
+
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+  processors:
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 100
+      spike_limit_mib: 28
+
+    batch:
+      timeout: 5s
+      send_batch_size: 512
+
+  exporters:
+    otlp_http/openobserve:
+      endpoint: http://openobserve.observability.svc:5080/api/default
+      headers:
+        Authorization: ${env:O2_AUTH}
+        stream-name: default
+      sending_queue:
+        enabled: true
+        queue_size: 1000
+      retry_on_failure:
+        enabled: true
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 5m
+
+  service:
+    extensions: [health_check]
+    telemetry:
+      logs:
+        level: info
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp_http/openobserve]
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp_http/openobserve]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp_http/openobserve]
+
+ports:
+  otlp:
+    enabled: true
+  otlp-http:
+    enabled: true
+  metrics:
+    enabled: true
+    containerPort: 8888
+    servicePort: 8888
+    protocol: TCP

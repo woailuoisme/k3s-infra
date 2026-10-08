@@ -9,10 +9,17 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/observability/otel-collector
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: 0.175.1
+      helm:
+        releaseName: otel-collector
+        valueFiles:
+          - $values/platform/observability/otel-collector/values.yaml
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

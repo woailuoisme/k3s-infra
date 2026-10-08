@@ -45,7 +45,7 @@ k3s-infra/
 │   ├── core/                # 全局命名空间、PriorityClass 优先级、LimitRange 防爆规则
 │   ├── gateway/traefik/     # Traefik Helm Values、安全中间件与独立 Kustomization
 │   ├── storage/garage/      # Garage S3 部署清单与自动化初始化 Job
-│   ├── database/postgres/   # CloudNativePG 数据库集群配置与自定义镜像构建文件
+│   ├── database/postgres/   # CloudNativePG 数据库集群配置与声明式初始化 SQL
 │   ├── cache/valkey/        # Valkey 缓存部署与资源限额
 │   ├── security/            # Authelia, CrowdSec 安全与权限配置
 │   ├── search/meilisearch/  # Meilisearch 搜索引擎清单
@@ -96,7 +96,7 @@ lefthook install
 | `just check` | 运行全量静态检测门禁（别名：`validate`, `lint`） |
 | `just fmt` | 自动格式化所有 Shell 脚本 (`shfmt`) 与 Markdown 文档 (`rumdl fmt`)（别名：`fix`） |
 | `just render [app]` | 渲染指定应用的 Kustomize 最终清单至终端（默认应用：`bgin`，别名：`template`） |
-| `just build [target]` | 本地构建容器镜像并自动导入 K3s containerd（默认：`postgres`） |
+| `just import-image [IMG]` | 快速拉取或导入预构建镜像至 K3s containerd（默认：`jiaoio/postgres:18-trixie`） |
 | `just set-repo <URL>` | 全局批量替换 `bootstrap/*.yaml` 中的 GitOps 仓库远端地址 |
 | `just set-domain <DOMAIN>` | 全局批量替换所有 YAML 清单与文档中的根域名 |
 | `just argocd` | 基于官方 Helm Chart 10.x 部署或就地升级 ArgoCD 到 v3.0+ 精简生产版 |

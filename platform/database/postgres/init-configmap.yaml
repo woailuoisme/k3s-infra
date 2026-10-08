@@ -1,5 +1,5 @@
 # ==============================================================================
-# IoT 售货机行业产品数据结构与维护任务声明式 ConfigMap (可供 Job 或 CNPG 挂载)
+# IoT 售货机行业产品数据结构与维护任务声明式 ConfigMap (供 CNPG postInit 挂载)
 # ==============================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -8,8 +8,17 @@ metadata:
   namespace: database
 data:
   02-iot-vending-schema.sql: |
-    CREATE EXTENSION IF NOT EXISTS timescaledb;
+    -- 核心扩展按需加载 (PostGIS, pgvector, pg_stat_statements 等)
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS postgis;
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    CREATE EXTENSION IF NOT EXISTS citext;
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE EXTENSION IF NOT EXISTS btree_gin;
+    CREATE EXTENSION IF NOT EXISTS btree_gist;
+    CREATE EXTENSION IF NOT EXISTS ltree;
 
+    -- 售货机高频遥测历史数据表
     CREATE TABLE IF NOT EXISTS vm_telemetry (
         time            TIMESTAMPTZ NOT NULL,
         device_no       TEXT NOT NULL,
@@ -28,7 +37,7 @@ data:
         lng             DOUBLE PRECISION
     );
 
-    COMMENT ON TABLE vm_telemetry IS '售货机高频遥测历史数据集 (TimescaleDB 超表)';
+    COMMENT ON TABLE vm_telemetry IS '售货机高频遥测历史数据集';
     COMMENT ON COLUMN vm_telemetry.time IS '数据上报/采样时间戳 (UTC)';
     COMMENT ON COLUMN vm_telemetry.device_no IS '设备唯一编号 (格式: VM-地区-编号)';
     COMMENT ON COLUMN vm_telemetry.voltage IS '【电气传感器】当前主板输入电压 (V，用于电网波动与欠压保护)';
@@ -45,9 +54,9 @@ data:
     COMMENT ON COLUMN vm_telemetry.lat IS '【GNSS 定位】GPS/北斗卫星定位纬度 (电子围栏防盗与资产盘点)';
     COMMENT ON COLUMN vm_telemetry.lng IS '【GNSS 定位】GPS/北斗卫星定位经度';
 
-    SELECT create_hypertable('vm_telemetry', 'time', if_not_exists => TRUE);
     CREATE INDEX IF NOT EXISTS idx_telemetry_device ON vm_telemetry (device_no, time DESC);
 
+    -- 售货机业务与异常告警事件记录表
     CREATE TABLE IF NOT EXISTS vm_events (
         time            TIMESTAMPTZ NOT NULL,
         device_no       TEXT NOT NULL,
@@ -73,10 +82,10 @@ data:
     COMMENT ON COLUMN vm_events.video_url IS '异常现场抓拍短视频URL';
     COMMENT ON COLUMN vm_events.raw_data IS '原始事件Payload副本 (JSONB格式)';
 
-    SELECT create_hypertable('vm_events', 'time', if_not_exists => TRUE);
     CREATE INDEX IF NOT EXISTS idx_events_device ON vm_events (device_no, time DESC);
     CREATE INDEX IF NOT EXISTS idx_events_type ON vm_events (event_type, time DESC);
 
+    -- 设备在线与硬件版本追踪表
     CREATE TABLE IF NOT EXISTS vm_status (
         time            TIMESTAMPTZ NOT NULL,
         device_no       TEXT NOT NULL,
@@ -92,5 +101,4 @@ data:
     COMMENT ON COLUMN vm_status.firmware IS '上报时的固件版本号';
     COMMENT ON COLUMN vm_status.hardware IS '机器底层硬件版本';
 
-    SELECT create_hypertable('vm_status', 'time', if_not_exists => TRUE);
     CREATE INDEX IF NOT EXISTS idx_status_device ON vm_status (device_no, time DESC);
