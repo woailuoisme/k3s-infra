@@ -1,24 +1,16 @@
-# ==============================================================================
-# CloudNative-PG 多模态扩展镜像 (4C8G 单机云原生生产调优)
-# 集成：PostGIS (空间)、pgvector (向量)、TimescaleDB (时序)、pg_cron (调度)、pg_repack (在线维护)
-# ==============================================================================
-ARG CNPG_POSTGRES_VERSION=18
-FROM ghcr.io/cloudnative-pg/postgresql:${CNPG_POSTGRES_VERSION}
-
+ARG POSTGRES_VERSION=18.6-trixie
+FROM postgres:${POSTGRES_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
-
-USER root
 
 ARG TIMEZONE=Asia/Shanghai
 ARG CHINA=true
 
-# 切换国内镜像源加速构建 (Debian)
+# 切换镜像源 (Debian Trixie)
 RUN if [ "$CHINA" = "true" ]; then \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true; \
+    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi
 
-# 添加 PostgreSQL 官方 PGDG 仓库（确保获取最新构建的 PG18 扩展包）
+# 添加 PostgreSQL 官方 PGDG 仓库
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -29,22 +21,35 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 安装核心多模扩展
-# 注：TimescaleDB、PostGIS 3、pgvector、pg_cron、pg_repack
+# 定义扩展版本参数（Debian 13 / trixie 对应 PGDG 构建后缀 pgdg13+1 / pgdg13+2）
+ARG PGCRON_VERSION=1.6.8-1.pgdg13+2
+ARG POSTGIS_VERSION=3.6.4+dfsg-2.pgdg13+1
+ARG PGVECTOR_VERSION=0.8.7-1.pgdg13+1
+
+# 安装核心扩展：地理空间 (PostGIS)、向量 (pgvector)、定时调度 (pg_cron)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-18-postgis-3 \
-    postgresql-18-pgvector \
-    postgresql-18-cron \
-    postgresql-18-repack \
-    postgresql-18-timescaledb \
+    postgresql-18-postgis-3="${POSTGIS_VERSION}" \
+    postgresql-18-pgvector="${PGVECTOR_VERSION}" \
+    postgresql-18-cron="${PGCRON_VERSION}" \
     tzdata \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 设置时区
+# 设置系统时区
 RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} > /etc/timezone
 
-# 声明 TimescaleDB Apache 许可
-ENV TS_LICENSE=apache
+# 复制优化后的配置文件
+COPY postgresql.conf /etc/postgresql/postgresql.conf
 
-# 切换回 postgres 专用安全非特权用户 (UID 26，符合 CNPG 规范)
-USER 26
+# 复制扩展初始化脚本
+COPY docker-entrypoint-initdb.d/ /docker-entrypoint-initdb.d/
+
+# 设置环境变量
+ENV POSTGRES_CONFIG_FILE=/etc/postgresql/postgresql.conf
+
+# 使用原始入口点，通过 CMD 传递配置参数
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+
+HEALTHCHECK --interval=60s --timeout=10s --retries=5 --start-period=60s \
+    CMD ["sh", "-c", "pg_isready -d ${POSTGRES_DB:-postgres} -U ${POSTGRES_USER:-postgres}"]
+
+EXPOSE 5432

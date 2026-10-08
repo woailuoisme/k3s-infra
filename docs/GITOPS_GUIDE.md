@@ -100,18 +100,23 @@ kubectl create secret generic helm-secrets-private-keys \
 
 ## 3. ArgoCD 精简安装与 Root-App 引导
 
-### 3.1 使用官方 Helm Chart 部署精简版 ArgoCD
+### 3.1 使用官方 Helm Chart 部署精简版 ArgoCD (v3.0+ / Chart 10.x)
 
-采用我们在 [`bootstrap/argocd-values.yaml`](file:///Users/seaside/Projects/devops/k3s/infra/bootstrap/argocd-values.yaml) 中优化的轻量配置（禁用 Dex、裁剪 Redis、注入 SOPS）：
+采用我们在 [`bootstrap/argocd-values.yaml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/bootstrap/argocd-values.yaml) 中优化的轻量配置（适配 ArgoCD v3.0+ 细粒度 RBAC、禁用 Dex、裁剪 Redis、注入 SOPS+Age）：
+
+可以直接使用 just 命令一键部署或升级：
 
 ```bash
-# 添加官方 Repo
+just install-argocd
+
+# 或者手动执行官方 Helm 安装：
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
 
-# 部署 ArgoCD
-helm install argocd argo/argo-cd \
+helm upgrade --install argocd argo/argo-cd \
   --namespace argocd \
+  --create-namespace \
+  --version "^10.0.0" \
   --values bootstrap/argocd-values.yaml
 ```
 
@@ -153,7 +158,7 @@ kubectl apply -f bootstrap/root-app.yaml
 | **Wave 3** | `10-openobserve` | `observability`| `openobserve.observability.svc:5080` | 256M / 512M | 极简云原生日志/指标/链路观测 (持久化至 Garage S3) |
 | **Wave 3** | `10-otel-collector` | `observability`| `otel-collector.observability.svc:4317/4318` | 64M / 128M | 统一遥测网关背压清洗管道 |
 | **Wave 3** | `10-dozzle` | `observability`| `dozzle.observability.svc:8080` | 32M / 64M | 实时 Pod 流式日志查看器 (原生 K8s RBAC 模式) |
-| **Wave 4** | `20-lunchbox` | `apps` | `lunchbox.apps.svc:8080` | 128M / 512M | 自研业务微服务 (无缝解耦，引用平台数据库与缓存) |
+| **Wave 4** | `20-bgin` | `apps` | `bgin.apps.svc:3300` | 128M / 512M | 自研业务微服务 (Go Gin API + Bun Worker 共享存储) |
 
 - **总基准内存占用 (Requests)**: 约 **2.0 GB**
 - **全服务极限峰值配额 (Limits)**: 约 **5.1 GB**
@@ -172,7 +177,7 @@ kubectl top pods -A
 针对 4C8G 物理硬约束与工控机可能面临的无预警瞬时流量或内存挤压，平台落地严格的三级调度与驱逐优先级：
 
 1. **`edge-critical` (优先级 1,000,000)**：核心基础设施（`Postgres`, `Mosquitto`, `Traefik`）。节点内存承压时由内核保护，绝不主动驱逐，守护离线售货、硬件通信与流量入口；
-2. **`platform-standard` (优先级 500,000)**：通用平台与自研业务应用（`Valkey`, `Garage`, `Centrifugo`, `Temporal`, `Lunchbox` 等）；
+2. **`platform-standard` (优先级 500,000)**：通用平台与自研业务应用（`Valkey`, `Garage`, `Centrifugo`, `Temporal`, `Bgin` 等）；
 3. **`observability-low` (优先级 100,000)**：可观测性与监控探针（`Dozzle`, `OpenObserve`, `Otel Collector`）。当内存逼近安全阈值时，kubelet 优先驱逐此类 Pod 立即释放物理内存，杜绝雪崩。
 
 ---
@@ -181,16 +186,17 @@ kubectl top pods -A
 
 ### 4.1 自动回写 Image Tag
 
-当业务应用构建完成后，在 GitHub Actions 工作流末尾自动修改 `apps/lunchbox/values.yaml` 中的 `image.tag` 并提交：
+当业务应用构建完成后，在 GitHub Actions 工作流末尾自动修改 `apps/bgin/kustomization.yaml` 中的镜像标签并提交：
 
 ```yaml
 - name: Update GitOps Tag
   run: |
-    sed -i "s/tag: .*/tag: \"${{ github.sha }}\"/" apps/lunchbox/values.yaml
+    cd apps/bgin
+    kustomize edit set image ghcr.io/seaside/bgin:${{ github.sha }}
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
-    git add apps/lunchbox/values.yaml
-    git commit -m "chore: release lunchbox ${{ github.sha }} [skip ci]"
+    git add kustomization.yaml
+    git commit -m "chore: release bgin ${{ github.sha }} [skip ci]"
     git push
 ```
 
@@ -235,4 +241,16 @@ kubectl cnpg backup postgres-cluster -n database
 # 查看 S3 备份存储桶状态
 kubectl exec -it -n storage garage-0 -- /garage status
 kubectl exec -it -n storage garage-0 -- /garage bucket list
+```
+
+### 5.4 全局一键切换根域名
+
+如需更换集群根域名（例如从 `haoxiaoguai.xyz` 迁移至自定义生产主域名）：
+
+```bash
+# 一键扫描替换全库 YAML、Helm values、Traefik 路由与配置，并自动执行完整语法校验
+just set-domain <新域名>
+
+# 查看变更范围
+git diff
 ```

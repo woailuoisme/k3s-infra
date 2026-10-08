@@ -28,9 +28,10 @@ jobs:
       matrix:
         include:
           - service: postgres-cnpg
-            context: ./platform/03-database
-            file: ./platform/03-database/Dockerfile
+            context: ./platform/database/postgres
+            file: ./platform/database/postgres/Dockerfile
             image: postgres-multimodal
+
 
     steps:
       - name: Filter service

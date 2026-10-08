@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgin-worker
+  namespace: apps
+  labels:
+    app.kubernetes.io/name: bgin-worker
+    app.kubernetes.io/part-of: bgin
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bgin-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bgin-worker
+        app.kubernetes.io/part-of: bgin
+    spec:
+      priorityClassName: platform-standard
+      containers:
+        - name: worker
+          image: ghcr.io/woailuoisme/gin-bun:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "queue:work"
+          envFrom:
+            - configMapRef:
+                name: bgin-config
+            - secretRef:
+                name: bgin-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: bgin-storage

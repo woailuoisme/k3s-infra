@@ -12,8 +12,6 @@
     "redhat.vscode-yaml",
     "tamasfe.even-better-toml",
     "editorconfig.editorconfig",
-    // CI/CD 与任务运行器
-    "skellock.just",
     // 本地多版本与环境管理
     "jdx.mise"
   ]

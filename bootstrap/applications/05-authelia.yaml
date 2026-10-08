@@ -19,6 +19,9 @@ spec:
           - $values/platform/security/authelia/authelia-values.yaml
     - repoURL: https://github.com/seaside/infra.git
       targetRevision: main
+      path: platform/security/authelia
+    - repoURL: https://github.com/seaside/infra.git
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

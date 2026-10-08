@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: authelia-users
   namespace: security
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 data:
   users_database.yml: |
     # Authelia 用户数据库配置 (由 docker/authelia/config/users_database.yml 迁移)

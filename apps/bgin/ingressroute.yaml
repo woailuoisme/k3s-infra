@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: bgin-api
+  namespace: apps
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`api.haoxiaoguai.xyz`)
+      kind: Rule
+      middlewares:
+        - name: chain-api
+          namespace: traefik
+      services:
+        - name: bgin-api
+          port: 3300
+  tls:
+    certResolver: cloudflare

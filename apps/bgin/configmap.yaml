@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bgin-config
+  namespace: apps
+data:
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_TIMEZONE: "Asia/Shanghai"
+  APP_URL: "https://api.haoxiaoguai.xyz"
+  ENABLE_DOCS: "true"
+  CORS_ALLOWED_ORIGINS: "https://haoxiaoguai.xyz,https://app.haoxiaoguai.xyz,https://api.haoxiaoguai.xyz"
+  LOG_CHANNEL: "json"
+  LOG_LEVEL: "info"
+  FILESYSTEM_DISK: "s3"
+  AWS_ENDPOINT: "http://garage.storage.svc:3900"
+  AWS_BUCKET: "bgin"
+  AWS_DEFAULT_REGION: "garage"
+  AWS_USE_SSL: "false"
+  IMGPROXY_ENABLED: "true"
+  IMGPROXY_URL: "http://imgproxy.media.svc:8080"
+  SCOUT_DRIVER: "meilisearch"
+  SCOUT_PREFIX: "bgin_"
+  MEILISEARCH_HOST: "http://meilisearch.search.svc:7700"
+  MAIL_DRIVER: "resend"
+  MAIL_FROM_ADDRESS: "no-reply@haoxiaoguai.xyz"
+  MAIL_FROM_NAME: "bgin"
+  CENTRIFUGO_ENABLED: "true"
+  CENTRIFUGO_URL: "http://centrifugo.messaging.svc:8000/api"
+  OTEL_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc:4317"
+  OTEL_TRACES_SAMPLE_RATIO: "0.1"

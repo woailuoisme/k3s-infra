@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: meilisearch
+  namespace: search
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`search.haoxiaoguai.xyz`)
+      kind: Rule
+      middlewares:
+        - name: chain-api
+          namespace: traefik
+      services:
+        - name: meilisearch
+          port: 7700
+  tls:
+    certResolver: cloudflare

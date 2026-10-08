@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage-webui
+  namespace: storage
+  labels:
+    app.kubernetes.io/name: garage-webui
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garage-webui
+  template:
+    metadata:
+      labels:
+        app: garage-webui
+    spec:
+      priorityClassName: platform-standard
+      containers:
+        - name: webui
+          image: khairul169/garage-webui:1.1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: API_BASE_URL
+              value: "http://garage:3903"
+            - name: S3_ENDPOINT_URL
+              value: "http://garage:3900"
+            - name: S3_REGION
+              value: "garage"
+            - name: CONFIG_PATH
+              value: "/etc/garage.toml"
+            - name: API_ADMIN_KEY
+              value: "A5Q4zO27rJ4Xlz/Ojuoj2obCbL1aFGe9SugGt066loQ="
+          ports:
+            - name: http
+              containerPort: 3909
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: garage-config
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-webui
+  namespace: storage
+  labels:
+    app.kubernetes.io/name: garage-webui
+spec:
+  selector:
+    app: garage-webui
+  ports:
+    - name: http
+      port: 3909
+      targetPort: 3909

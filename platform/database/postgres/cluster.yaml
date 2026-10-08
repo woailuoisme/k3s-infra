@@ -57,10 +57,10 @@ spec:
       autovacuum_analyze_scale_factor: "0.05"
       jit: "off"
 
-  # 初始默认数据库与用户 (对齐 docker/.env 中的 lunchbox 库)
+  # 初始默认数据库与用户 (以 bgin 核心业务库为主)
   bootstrap:
     initdb:
-      database: lunchbox
+      database: bgin
       owner: app
       secret:
         name: postgres-app-credentials
@@ -70,9 +70,16 @@ spec:
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS pg_cron;
         - CREATE EXTENSION IF NOT EXISTS dblink;
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        - CREATE EXTENSION IF NOT EXISTS "citext";
+        - CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+        - CREATE EXTENSION IF NOT EXISTS "btree_gin";
+        - CREATE EXTENSION IF NOT EXISTS "vector";
+        - CREATE EXTENSION IF NOT EXISTS "postgis";
         - CREATE DATABASE authelia OWNER app;
         - GRANT ALL PRIVILEGES ON DATABASE authelia TO app;
         - |
+
           CREATE OR REPLACE FUNCTION public.repack_bloated_tables(dead_tup_min bigint DEFAULT 100000, dead_ratio_min numeric DEFAULT 0.2) RETURNS void LANGUAGE plpgsql AS $$
           DECLARE db record; conn text; tbl record;
           BEGIN

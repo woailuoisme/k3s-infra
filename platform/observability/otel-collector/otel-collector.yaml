@@ -89,7 +89,7 @@ spec:
       priorityClassName: observability-low
       containers:
         - name: otel-collector
-          image: otel/opentelemetry-collector-contrib:0.161.0
+          image: otel/opentelemetry-collector-contrib:0.162.0
           imagePullPolicy: IfNotPresent
           command:
             - "--config=/etc/otelcol-contrib/config.yaml"

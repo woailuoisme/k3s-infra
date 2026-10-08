@@ -53,7 +53,7 @@ spec:
       serviceAccountName: dozzle
       containers:
         - name: dozzle
-          image: amir20/dozzle:v10
+          image: amir20/dozzle:v11
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

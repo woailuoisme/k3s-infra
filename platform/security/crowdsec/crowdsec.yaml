@@ -60,7 +60,7 @@ spec:
       priorityClassName: platform-standard
       containers:
         - name: crowdsec
-          image: crowdsecurity/crowdsec:v1.6.4
+          image: crowdsecurity/crowdsec:v1.8.1-slim
           imagePullPolicy: IfNotPresent
           env:
             - name: TZ

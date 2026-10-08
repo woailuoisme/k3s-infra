@@ -77,7 +77,7 @@ spec:
       priorityClassName: edge-critical
       containers:
         - name: mosquitto
-          image: eclipse-mosquitto:2.0-alpine
+          image: eclipse-mosquitto:2.1-alpine
           imagePullPolicy: IfNotPresent
           ports:
             - name: mqtt

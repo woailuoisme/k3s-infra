@@ -1,5 +1,5 @@
 # ==============================================================================
-# ArgoCD 4C8G 生产精简调优 Values (ArgoCD v2.14+ 官方 Helm Chart)
+# ArgoCD 4C8G 生产精简调优 Values (ArgoCD v3.0+ 官方 Helm Chart 10.x)
 # ==============================================================================
 # 目标：在单台 4C8G 节点上将 ArgoCD 整体内存消耗压制在 350MB-450MB，并集成 SOPS+Age 解密
 # ==============================================================================
@@ -34,7 +34,7 @@ repoServer:
     limits:
       cpu: 300m
       memory: 256Mi
-  # 挂载 Age 私钥（由集群 Secret 注入，不占用常驻控制器内存）
+  # 挂载 Age 私钥与自定义工具共享卷
   volumes:
     - name: age-key-volume
       secret:
@@ -42,13 +42,19 @@ repoServer:
         items:
           - key: key.txt
             path: key.txt
+    - name: custom-tools
+      emptyDir: {}
   volumeMounts:
     - name: age-key-volume
       mountPath: /helm-secrets-private-keys
       readOnly: true
+    - name: custom-tools
+      mountPath: /custom-tools
   env:
     - name: SOPS_AGE_KEY_FILE
       value: /helm-secrets-private-keys/key.txt
+    - name: PATH
+      value: /custom-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   # 初始化容器自动注入 SOPS 与 Age 二进制工具
   initContainers:
     - name: install-sops-age
@@ -123,3 +129,25 @@ notifications:
 # 禁用 ApplicationSet 控制器（采用 App-of-Apps 模式，立省 ~100MB 内存）
 applicationSet:
   enabled: false
+
+# ------------------------------------------------------------------------------
+# 6. ArgoCD v3.0+ 核心配置与细粒度 RBAC (Configs)
+# ------------------------------------------------------------------------------
+configs:
+  cm:
+    # 忽略 CRD spec.preserveUnknownFields 差异，避免 3.0+ 产生无意义的 OutOfSync
+    resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
+      jsonPointers:
+      - /spec/preserveUnknownFields
+  rbac:
+    # 3.0 原生严格细粒度 RBAC 策略 (Fine-Grained RBAC)
+    policy.default: role:readonly
+    policy.csv: |
+      # 赋予 admin 角色全量应用与子资源操作权限（包括 3.0 子资源与 logs 审计）
+      p, role:admin, applications, *, */*, allow
+      p, role:admin, clusters, *, *, allow
+      p, role:admin, repositories, *, *, allow
+      p, role:admin, logs, get, */*, allow
+      p, role:admin, exec, create, */*, allow
+      g, admin, role:admin
+    scopes: '[groups, email]'

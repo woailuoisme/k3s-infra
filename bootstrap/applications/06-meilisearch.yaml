@@ -19,6 +19,9 @@ spec:
           - $values/platform/search/meilisearch/meilisearch-values.yaml
     - repoURL: https://github.com/seaside/infra.git
       targetRevision: main
+      path: platform/search/meilisearch
+    - repoURL: https://github.com/seaside/infra.git
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: 20-lunchbox
+  name: 20-bgin
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"
@@ -12,10 +12,7 @@ spec:
   source:
     repoURL: https://github.com/seaside/infra.git
     targetRevision: main
-    path: apps/lunchbox
-    helm:
-      valueFiles:
-        - values.yaml
+    path: apps/bgin
   destination:
     server: https://kubernetes.default.svc
     namespace: apps
