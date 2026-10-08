@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`auth.haoxiaoguai.xyz`)
+    - match: Host(`auth.mso.lol`)
       kind: Rule
       middlewares:
         - name: chain-basic

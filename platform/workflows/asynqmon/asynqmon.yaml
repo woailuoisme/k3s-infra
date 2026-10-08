@@ -94,7 +94,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`asynq.haoxiaoguai.xyz`)
+    - match: Host(`asynq.mso.lol`)
       kind: Rule
       middlewares:
         - name: chain-auth

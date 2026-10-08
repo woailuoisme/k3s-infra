@@ -77,7 +77,7 @@ cat ~/.config/sops/age/keys.txt | grep "public key"
 
 ### 2.2 更新仓库公钥
 
-将生成的公钥填入本仓库根目录的 [`.sops.yaml`](file:///Users/seaside/Projects/devops/k3s/infra/.sops.yaml) 中：
+将生成的公钥填入本仓库根目录的 [`.sops.yaml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/.sops.yaml) 中：
 
 ```yaml
 creation_rules:
@@ -192,7 +192,7 @@ kubectl top pods -A
 - name: Update GitOps Tag
   run: |
     cd apps/bgin
-    kustomize edit set image ghcr.io/seaside/bgin:${{ github.sha }}
+    kustomize edit set image ghcr.io/woailuoisme/gin-bun:${{ github.sha }}
     git config user.name "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
     git add kustomization.yaml
@@ -245,7 +245,7 @@ kubectl exec -it -n storage garage-0 -- /garage bucket list
 
 ### 5.4 全局一键切换根域名
 
-如需更换集群根域名（例如从 `haoxiaoguai.xyz` 迁移至自定义生产主域名）：
+如需更换集群根域名（例如从 `mso.lol` 迁移至自定义生产主域名）：
 
 ```bash
 # 一键扫描替换全库 YAML、Helm values、Traefik 路由与配置，并自动执行完整语法校验

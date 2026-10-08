@@ -50,7 +50,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: init
-          image: bitnami/kubectl:latest
+          image: bitnami/kubectl:1.32.2
           imagePullPolicy: IfNotPresent
           env:
             - name: GARAGE_DEFAULT_ACCESS_KEY

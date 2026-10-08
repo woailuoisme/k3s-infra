@@ -154,7 +154,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`logs.haoxiaoguai.xyz`) || Host(`o2.haoxiaoguai.xyz`) || Host(`observe.haoxiaoguai.xyz`)
+    - match: Host(`logs.mso.lol`) || Host(`o2.mso.lol`) || Host(`observe.mso.lol`)
       kind: Rule
       services:
         - name: openobserve

@@ -149,7 +149,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`mqtt.haoxiaoguai.xyz`)
+    - match: Host(`mqtt.mso.lol`)
       kind: Rule
       services:
         - name: mosquitto

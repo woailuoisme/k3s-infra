@@ -17,10 +17,10 @@ spec:
         releaseName: meilisearch
         valueFiles:
           - $values/platform/search/meilisearch/meilisearch-values.yaml
-    - repoURL: https://github.com/seaside/infra.git
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       path: platform/search/meilisearch
-    - repoURL: https://github.com/seaside/infra.git
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       ref: values
   destination:

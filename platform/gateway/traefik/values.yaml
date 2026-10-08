@@ -66,7 +66,7 @@ persistence:
 certificatesResolvers:
   cloudflare:
     acme:
-      email: admin@haoxiaoguai.xyz
+      email: admin@mso.lol
       storage: /data/acme.json
       dnsChallenge:
         provider: cloudflare
@@ -75,7 +75,7 @@ certificatesResolvers:
           - "8.8.8.8:53"
   letsencrypt:
     acme:
-      email: admin@haoxiaoguai.xyz
+      email: admin@mso.lol
       storage: /data/acme.json
       dnsChallenge:
         provider: cloudflare
@@ -109,7 +109,7 @@ extraObjects:
       entryPoints:
         - websecure
       routes:
-        - match: (Host(`gateway.haoxiaoguai.xyz`) || Host(`traefik.haoxiaoguai.xyz`)) && Path(`/`)
+        - match: (Host(`gateway.mso.lol`) || Host(`traefik.mso.lol`)) && Path(`/`)
           kind: Rule
           priority: 100
           middlewares:
@@ -128,7 +128,7 @@ extraObjects:
       entryPoints:
         - websecure
       routes:
-        - match: Host(`gateway.haoxiaoguai.xyz`) || Host(`traefik.haoxiaoguai.xyz`)
+        - match: Host(`gateway.mso.lol`) || Host(`traefik.mso.lol`)
           kind: Rule
           priority: 10
           middlewares:
@@ -138,175 +138,6 @@ extraObjects:
               kind: TraefikService
       tls:
         certResolver: cloudflare
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: security-headers
-    spec:
-      headers:
-        stsSeconds: 31536000
-        stsIncludeSubdomains: true
-        stsPreload: true
-        contentTypeNosniff: true
-        browserXssFilter: true
-        customFrameOptionsValue: "SAMEORIGIN"
-        referrerPolicy: "strict-origin-when-cross-origin"
-        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: compress
-    spec:
-      compress:
-        excludedContentTypes:
-          - "text/event-stream"
-          - "application/grpc"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: rate-limit
-    spec:
-      rateLimit:
-        average: 100
-        burst: 50
-        period: "1s"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: authelia
-    spec:
-      forwardAuth:
-        address: "http://authelia.security.svc:9091/api/authz/forward-auth"
-        trustForwardHeader: true
-        authResponseHeaders:
-          - "Remote-User"
-          - "Remote-Groups"
-          - "Remote-Name"
-          - "Remote-Email"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: authelia-basic
-    spec:
-      forwardAuth:
-        address: "http://authelia.security.svc:9091/api/verify?auth=basic"
-        trustForwardHeader: true
-        authResponseHeaders:
-          - "Remote-User"
-          - "Remote-Groups"
-          - "Remote-Name"
-          - "Remote-Email"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: ip-allow-internal
-    spec:
-      ipAllowList:
-        sourceRange:
-          - "127.0.0.1/32"
-          - "10.0.0.0/8"
-          - "172.16.0.0/12"
-          - "192.168.0.0/16"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: cors-headers
-    spec:
-      headers:
-        accessControlAllowMethods:
-          - "GET"
-          - "POST"
-          - "PUT"
-          - "PATCH"
-          - "DELETE"
-          - "OPTIONS"
-        accessControlAllowHeaders:
-          - "DNT"
-          - "User-Agent"
-          - "X-Requested-With"
-          - "If-Modified-Since"
-          - "Cache-Control"
-          - "Content-Type"
-          - "Range"
-          - "Authorization"
-        accessControlAllowOriginList:
-          - "*"
-        accessControlMaxAge: 86400
-        addVaryHeader: true
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: retry-service
-    spec:
-      retry:
-        attempts: 3
-        initialInterval: "100ms"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: buffering-default
-    spec:
-      buffering:
-        maxRequestBodyBytes: 104857600
-        memRequestBodyBytes: 2097152
-        maxResponseBodyBytes: 104857600
-        memResponseBodyBytes: 2097152
-        retryExpression: "IsNetworkError() && Attempts() <= 2"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: inflight-limit
-    spec:
-      inFlightReq:
-        amount: 50
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: circuit-breaker
-    spec:
-      circuitBreaker:
-        expression: "ResponseCodeRatio(500, 600, 0, 600) > 0.25"
-        checkPeriod: "10s"
-        fallbackDuration: "30s"
-        recoveryDuration: "30s"
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: chain-basic
-    spec:
-      chain:
-        middlewares:
-          - name: security-headers
-          - name: compress
-          - name: retry-service
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: chain-auth
-    spec:
-      chain:
-        middlewares:
-          - name: chain-basic
-          - name: authelia
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: chain-api
-    spec:
-      chain:
-        middlewares:
-          - name: chain-basic
-          - name: rate-limit
-          - name: cors-headers
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: chain-internal
-    spec:
-      chain:
-        middlewares:
-          - name: chain-basic
-          - name: ip-allow-internal
 
 # ------------------------------------------------------------------------------
 # 实验性插件 (CrowdSec Bouncer WAF)

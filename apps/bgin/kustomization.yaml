@@ -11,3 +11,7 @@ resources:
   - worker-deployment.yaml
   - service.yaml
   - ingressroute.yaml
+
+images:
+  - name: ghcr.io/woailuoisme/gin-bun
+    newTag: v1.0.0

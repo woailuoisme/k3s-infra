@@ -5,7 +5,7 @@
 # ==============================================================================
 
 global:
-  domain: argocd.haoxiaoguai.xyz
+  domain: argocd.mso.lol
 
 # ------------------------------------------------------------------------------
 # 1. 核心控制器 (Application Controller)
@@ -112,7 +112,7 @@ server:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
       traefik.ingress.kubernetes.io/router.tls: "true"
       traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
-    hostname: argocd.haoxiaoguai.xyz
+    hostname: argocd.mso.lol
     tls: true
 
 # ------------------------------------------------------------------------------

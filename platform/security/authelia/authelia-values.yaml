@@ -16,7 +16,7 @@ resources:
 
 configMap:
   theme: light
-  default_redirection_url: "https://auth.haoxiaoguai.xyz"
+  default_redirection_url: "https://auth.mso.lol"
   server:
     buffers:
       read: 4096
@@ -51,10 +51,10 @@ configMap:
     default_policy: deny
     rules:
       - domain:
-          - "auth.haoxiaoguai.xyz"
+          - "auth.mso.lol"
         policy: bypass
       - domain:
-          - "*.haoxiaoguai.xyz"
+          - "*.mso.lol"
         policy: one_factor
         subject:
           - "group:admin"

@@ -17,7 +17,7 @@ spec:
         releaseName: valkey
         valueFiles:
           - $values/platform/database/valkey/values.yaml
-    - repoURL: https://github.com/seaside/infra.git
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       ref: values
   destination:

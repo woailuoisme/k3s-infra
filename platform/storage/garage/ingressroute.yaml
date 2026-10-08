@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`s3.haoxiaoguai.xyz`) || HostRegexp(`^[a-z0-9.-]+\.s3\.haoxiaoguai.xyz$`)
+    - match: Host(`s3.mso.lol`) || HostRegexp(`^[a-z0-9.-]+\.s3\.mso.lol$`)
       kind: Rule
       middlewares:
         - name: chain-basic
@@ -27,7 +27,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`storage-ui.haoxiaoguai.xyz`) || Host(`s3-ui.haoxiaoguai.xyz`)
+    - match: Host(`storage-ui.mso.lol`) || Host(`s3-ui.mso.lol`)
       kind: Rule
       middlewares:
         - name: chain-auth

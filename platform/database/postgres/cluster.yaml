@@ -14,7 +14,7 @@ spec:
   priorityClassName: edge-critical
 
   # 多模态定制镜像 (含 PostGIS, pgvector, TimescaleDB, pg_cron, pg_repack)
-  imageName: ghcr.io/seaside/postgres-multimodal:18
+  imageName: ghcr.io/woailuoisme/postgres-multimodal:18
 
   # 存储使用 K3s 原生 local-path (NVMe 直挂)
   storage:

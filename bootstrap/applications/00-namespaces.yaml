@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/seaside/infra.git
+    repoURL: https://github.com/woailuoisme/k3s-infra.git
     targetRevision: main
     path: platform/core
   destination:

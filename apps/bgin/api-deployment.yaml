@@ -22,7 +22,7 @@ spec:
       priorityClassName: platform-standard
       containers:
         - name: api
-          image: ghcr.io/woailuoisme/gin-bun:latest
+          image: ghcr.io/woailuoisme/gin-bun
           imagePullPolicy: IfNotPresent
           command:
             - "serve"

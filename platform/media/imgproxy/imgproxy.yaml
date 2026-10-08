@@ -103,7 +103,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`img.haoxiaoguai.xyz`) || Host(`imgproxy.haoxiaoguai.xyz`)
+    - match: Host(`img.mso.lol`) || Host(`imgproxy.mso.lol`)
       kind: Rule
       services:
         - name: imgproxy

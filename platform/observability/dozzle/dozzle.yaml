@@ -108,7 +108,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`dozzle.haoxiaoguai.xyz`)
+    - match: Host(`dozzle.mso.lol`)
       kind: Rule
       middlewares:
         - name: chain-auth

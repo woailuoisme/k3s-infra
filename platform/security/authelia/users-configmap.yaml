@@ -16,7 +16,7 @@ data:
         disabled: false
         displayname: "系统管理员"
         password: "$argon2id$v=19$m=65536,t=3,p=4$S5yZIio6/bxYBDTHjzWR5w$pX7+aniLA8SrPv2/iLH3lMF41o8k/fHoTY2Rpjgybvw"
-        email: admin@haoxiaoguai.xyz
+        email: admin@mso.lol
         groups:
           - admin
           - user
@@ -26,6 +26,6 @@ data:
         disabled: false
         displayname: "普通用户"
         password: "$argon2id$v=19$m=65536,t=3,p=4$0WXsk9oIUar9Wqwj8z6c0g$yUtxJeijRskYul/3JOJU9hzXLuHXwh/RMbs62pb2yBk"
-        email: user@haoxiaoguai.xyz
+        email: user@mso.lol
         groups:
           - user

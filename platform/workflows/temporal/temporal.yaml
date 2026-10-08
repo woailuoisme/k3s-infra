@@ -110,7 +110,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`temporal.haoxiaoguai.xyz`)
+    - match: Host(`temporal.mso.lol`)
       kind: Rule
       middlewares:
         - name: chain-auth

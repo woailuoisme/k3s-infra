@@ -18,8 +18,12 @@ spec:
         releaseName: traefik
         valueFiles:
           - $values/platform/gateway/traefik/values.yaml
-    # 2. 本 GitOps 仓库 (提供本地 values.yaml)
-    - repoURL: https://github.com/seaside/infra.git
+    # 2. 本 GitOps 仓库 (提供全局 Middlewares CRD 资源)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/gateway/traefik
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       ref: values
   destination:

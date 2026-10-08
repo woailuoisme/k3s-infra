@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     # 替换为实际 Git 仓库地址（支持 GitHub HTTPS 或 SSH）
-    repoURL: https://github.com/seaside/infra.git
+    repoURL: https://github.com/woailuoisme/k3s-infra.git
     targetRevision: main
     path: bootstrap/applications
   destination:

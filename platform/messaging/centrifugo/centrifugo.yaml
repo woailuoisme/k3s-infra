@@ -234,7 +234,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`centrifugo.haoxiaoguai.xyz`)
+    - match: Host(`centrifugo.mso.lol`)
       kind: Rule
       services:
         - name: centrifugo
