@@ -38,15 +38,10 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
 
 ### 2. 注入 Sealed Secrets 离线主私钥 (仅新集群/灾备执行一次)
 
-新集群在启动控制器前需预先导入离线生成的 RSA 私钥：
+新集群在启动控制器前需预先导入离线生成的 RSA 私钥（默认读取 `~/.config/sealed-secrets/master.key`）：
 
 ```bash
-kubectl -n kube-system create secret tls sealed-secrets-key \
-  --cert=platform/security/sealed-secrets/public-cert.pem \
-  --key="$HOME/.config/sealed-secrets/master.key"
-
-kubectl -n kube-system label secret sealed-secrets-key \
-  sealedsecrets.bitnami.com/sealed-secrets-key=active
+just init-key
 ```
 
 ### 3. 一键部署 ArgoCD 并引导根应用
@@ -96,6 +91,7 @@ just pass
 | `just fmt` | 自动格式化 Shell 脚本与 Markdown 文档（别名：`fix`） |
 | `just up` | 引导启动或同步 ArgoCD 根应用 (App-of-Apps)（别名：`bootstrap`） |
 | `just ps` | 查看全集群 Pod 运行健康度与 ArgoCD 应用同步状态（别名：`status`） |
+| `just init-key [KEY]` | 注入 Sealed Secrets 离线主私钥并触发自愈解密（别名：`init-secrets`） |
 | `just verify` | 检查集群内 13 个 Sealed Secrets 的解密与 Secret 映射状态（别名：`verify-secrets`） |
 | `just seal <src> <dst>` | 使用离线公钥加密明文 Secret 并生成入库清单 |
 | `just ui` | 端口转发访问本地 ArgoCD 控制台 (`localhost:8080`) |

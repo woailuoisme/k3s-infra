@@ -49,6 +49,11 @@ ps:
     @./scripts/cluster.sh ps
 status: ps
 
+# 注入 Sealed Secrets 离线主私钥并触发全量自愈解密
+init-key key="$HOME/.config/sealed-secrets/master.key":
+    @./scripts/cluster.sh init-key "{{key}}"
+init-secrets key="$HOME/.config/sealed-secrets/master.key": (init-key key)
+
 # 验证集群端 Sealed Secrets 解密状态与 Secret 映射
 verify:
     @./scripts/cluster.sh verify

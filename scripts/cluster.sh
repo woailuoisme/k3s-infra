@@ -18,6 +18,40 @@ cmd_pass() {
 	echo
 }
 
+cmd_init_key() {
+	local key_file="${1:-$HOME/.config/sealed-secrets/master.key}"
+	local cert_file="platform/security/sealed-secrets/public-cert.pem"
+
+	if [ ! -f "$key_file" ]; then
+		echo "错误: 未找到私钥文件: $key_file"
+		echo "请确保私钥存放在 ~/.config/sealed-secrets/master.key 或传入路径: ./scripts/cluster.sh init-key <PATH>"
+		return 1
+	fi
+
+	if [ ! -f "$cert_file" ]; then
+		echo "错误: 未找到公钥证书文件: $cert_file"
+		return 1
+	fi
+
+	echo "==> 1. 注入 Sealed Secrets 离线主私钥到 kube-system..."
+	kubectl -n kube-system create secret tls sealed-secrets-key \
+		--cert="$cert_file" \
+		--key="$key_file" \
+		--dry-run=client -o yaml | kubectl apply -f -
+
+	echo "==> 2. 标记私钥为 active 激活状态..."
+	kubectl -n kube-system label secret sealed-secrets-key \
+		sealedsecrets.bitnami.com/sealed-secrets-key=active --overwrite
+
+	echo "==> 3. 重启 sealed-secrets-controller 触发全量解密自愈..."
+	kubectl -n kube-system rollout restart deployment sealed-secrets-controller
+	kubectl -n kube-system rollout status deployment sealed-secrets-controller --timeout=60s
+
+	echo -e "\n==> 4. 正在验证 Secret 解密与生成状态..."
+	sleep 3
+	cmd_verify
+}
+
 cmd_verify() {
 	echo "==> 1. Sealed Secrets 主密钥状态"
 	kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key=active || true
@@ -105,6 +139,7 @@ k3s-infra 集群运维工具 (scripts/cluster.sh)
   ./scripts/cluster.sh <command> [arguments...]
 
 指令:
+  init-key [KEY_FILE]      注入 Sealed Secrets 离线私钥并触发自愈解密
   verify                   核验 13 个 Sealed Secrets 解密及生成状态
   ps | status              查看 ArgoCD 应用状态与 Pod 列表
   argocd                   安装或就地升级 ArgoCD (v3.0+)
@@ -120,6 +155,7 @@ ACTION="${1:-help}"
 shift || true
 
 case "$ACTION" in
+	init-key | init-secrets) cmd_init_key "$@" ;;
 	verify | verify-secrets) cmd_verify "$@" ;;
 	ps | status) cmd_ps "$@" ;;
 	argocd | install-argocd | upgrade-argocd) cmd_argocd "$@" ;;
