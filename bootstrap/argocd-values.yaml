@@ -106,14 +106,34 @@ server:
   extraArgs:
     - --insecure
   ingress:
-    enabled: true
-    ingressClassName: traefik
-    annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      traefik.ingress.kubernetes.io/router.tls: "true"
-      traefik.ingress.kubernetes.io/router.tls.certresolver: cloudflare
-    hostname: argocd.mso.lol
-    tls: true
+    enabled: false
+
+# 注入 Traefik 原生 IngressRoute (支持 Web UI 与 gRPC CLI 双通道，自动 Cloudflare 证书)
+extraObjects:
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: argocd-server
+      namespace: argocd
+    spec:
+      entryPoints:
+        - websecure
+      routes:
+        - match: Host(`argocd.mso.lol`)
+          kind: Rule
+          priority: 10
+          services:
+            - name: argocd-server
+              port: 80
+        - match: Host(`argocd.mso.lol`) && Headers(`Content-Type`, `application/grpc`)
+          kind: Rule
+          priority: 20
+          services:
+            - name: argocd-server
+              port: 80
+              scheme: h2c
+      tls:
+        certResolver: cloudflare
 
 # ------------------------------------------------------------------------------
 # 5. 裁剪冗余组件 (4C8G 降本节流核心)
