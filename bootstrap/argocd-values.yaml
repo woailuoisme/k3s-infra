@@ -12,6 +12,8 @@ global:
 # ------------------------------------------------------------------------------
 controller:
   replicas: 1
+  priorityClassName: edge-critical
+  logFormat: json
   resources:
     requests:
       cpu: 100m
@@ -27,6 +29,8 @@ controller:
 # ------------------------------------------------------------------------------
 repoServer:
   replicas: 1
+  priorityClassName: edge-critical
+  logFormat: json
   resources:
     requests:
       cpu: 50m
@@ -55,7 +59,7 @@ repoServer:
       value: /helm-secrets-private-keys/key.txt
     - name: PATH
       value: /custom-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-  # 初始化容器自动注入 SOPS 与 Age 二进制工具
+  # 初始化容器自动注入 SOPS 与 Age 二进制工具 (具备网络重试与幂等检测)
   initContainers:
     - name: install-sops-age
       image: alpine:3.21
@@ -65,14 +69,18 @@ repoServer:
           set -e
           ARCH="amd64"
           if [ "$(uname -m)" = "aarch64" ]; then ARCH="arm64"; fi
-          # 下载 sops v3.9.4
-          wget -qO /custom-tools/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.${ARCH}
-          chmod +x /custom-tools/sops
-          # 下载 age v1.2.1
-          wget -qO - https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-${ARCH}.tar.gz | tar -xz -C /tmp
-          mv /tmp/age/age /custom-tools/age
-          chmod +x /custom-tools/age
-          rm -rf /tmp/age
+          # 幂等下载 sops v3.9.4 (带超时与重试)
+          if [ ! -x /custom-tools/sops ]; then
+            wget -q -T 15 -t 3 -O /custom-tools/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.${ARCH}
+            chmod +x /custom-tools/sops
+          fi
+          # 幂等下载 age v1.2.1 (带超时与重试)
+          if [ ! -x /custom-tools/age ]; then
+            wget -q -T 15 -t 3 -O - https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-${ARCH}.tar.gz | tar -xz -C /tmp
+            mv /tmp/age/age /custom-tools/age
+            chmod +x /custom-tools/age
+            rm -rf /tmp/age
+          fi
       volumeMounts:
         - name: custom-tools
           mountPath: /custom-tools
@@ -83,6 +91,7 @@ repoServer:
 # ------------------------------------------------------------------------------
 redis:
   enabled: true
+  priorityClassName: edge-critical
   resources:
     requests:
       cpu: 20m
@@ -96,6 +105,8 @@ redis:
 # ------------------------------------------------------------------------------
 server:
   replicas: 1
+  priorityClassName: edge-critical
+  logFormat: json
   resources:
     requests:
       cpu: 50m
@@ -122,6 +133,9 @@ extraObjects:
         - match: Host(`argocd.mso.lol`)
           kind: Rule
           priority: 10
+          middlewares:
+            - name: chain-basic
+              namespace: traefik
           services:
             - name: argocd-server
               port: 80
@@ -155,6 +169,8 @@ applicationSet:
 # ------------------------------------------------------------------------------
 configs:
   cm:
+    # 生产标准外网入口基准 URL (规范 Webhook 回调、OIDC 重定向与 CLI 终端交互)
+    url: https://argocd.mso.lol
     # 忽略 CRD spec.preserveUnknownFields 差异，避免 3.0+ 产生无意义的 OutOfSync
     resource.customizations.ignoreDifferences.apiextensions.k8s.io_CustomResourceDefinition: |
       jsonPointers:
