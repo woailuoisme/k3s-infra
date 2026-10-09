@@ -69,6 +69,41 @@ status:
     @kubectl get pods -A
 ps: status
 
+# 验证集群端 Sealed Secrets 解密状态与对应 Secret 映射
+verify-secrets:
+    @echo "=== 1. Sealed Secrets 控制器私钥状态 ==="
+    @kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key=active
+    @echo
+    @echo "=== 2. Sealed Secrets CRD 同步状态 ==="
+    @kubectl get sealedsecrets -A -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,STATUS:.status.conditions[0].type,REASON:.status.conditions[0].reason
+    @echo
+    @echo "=== 3. 对应生成的标准 Secret 存在性对照 ==="
+    @for ns_secret in \
+        "apps:bgin-secret" \
+        "media:imgproxy-secret" \
+        "search:meilisearch-secret" \
+        "messaging:centrifugo-secret" \
+        "messaging:centrifugo-env" \
+        "gateway:cloudflare-api-token" \
+        "security:authelia-secret" \
+        "security:crowdsec-secret" \
+        "storage:garage-rpc-secret" \
+        "storage:garage-admin-token" \
+        "database:postgres-s3-credentials" \
+        "database:postgres-app-credentials" \
+        "observability:openobserve-credentials"; do \
+        ns=$${ns_secret%%:*}; secret=$${ns_secret##*:}; \
+        if kubectl get secret "$$secret" -n "$$ns" >/dev/null 2>&1; then \
+            echo "  ✓ [$$ns] $$secret"; \
+        else \
+            echo "  ✗ [$$ns] $$secret (未生成或解密失败)"; \
+        fi \
+    done
+    @echo
+    @echo "排查提示: 如有解密失败，可查看控制器日志:"
+    @echo "  kubectl logs -n kube-system -l app.kubernetes.io/name=sealed-secrets --tail=50"
+
+
 # 批量替换 GitOps 仓库远端地址
 set-repo new_repo old_repo="https://github.com/woailuoisme/k3s-infra.git":
     @OLD="{{old_repo}}" NEW="{{new_repo}}"; \
