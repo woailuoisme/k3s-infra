@@ -16,6 +16,7 @@ spec:
     helm:
       releaseName: cnpg-operator
       values: |
+        fullnameOverride: cnpg-operator
         replicaCount: 1
         resources:
           requests:
