@@ -77,6 +77,18 @@ configMap:
           - "auth.mso.lol"
         policy: bypass
       - domain:
+          - "api.mso.lol"
+        resources:
+          - "^/docs/admin.*"
+        policy: one_factor
+        subject:
+          - "group:admin"
+      - domain:
+          - "api.mso.lol"
+        resources:
+          - "^/docs.*"
+        policy: one_factor
+      - domain:
           - "*.mso.lol"
         policy: one_factor
         subject:

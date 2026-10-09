@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - dozzle.yaml
+  - ingressroute.yaml

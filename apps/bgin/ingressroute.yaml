@@ -7,8 +7,18 @@ spec:
   entryPoints:
     - websecure
   routes:
+    - match: Host(`api.mso.lol`) && PathPrefix(`/docs`)
+      kind: Rule
+      priority: 20
+      middlewares:
+        - name: chain-auth
+          namespace: traefik
+      services:
+        - name: bgin-api
+          port: 3300
     - match: Host(`api.mso.lol`)
       kind: Rule
+      priority: 10
       middlewares:
         - name: chain-api
           namespace: traefik

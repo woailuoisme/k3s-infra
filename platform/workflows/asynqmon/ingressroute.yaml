@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: asynqmon
+  namespace: workflows
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`asynq.mso.lol`)
+      kind: Rule
+      middlewares:
+        - name: chain-auth
+          namespace: traefik
+      services:
+        - name: asynqmon
+          port: 8080
+  tls:
+    certResolver: cloudflare
