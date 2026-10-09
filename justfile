@@ -1,5 +1,5 @@
 set shell := ["bash", "-uc"]
-set dotenv-load := false
+set dotenv-load := true
 
 default:
     @just --list
@@ -48,6 +48,20 @@ down:
 ps:
     @./scripts/cluster.sh ps
 status: ps
+
+# 集群全面健康度巡检 (连通性, 节点, 异常 Pod, ArgoCD)
+health:
+    @./scripts/cluster.sh health
+doctor: health
+
+# 滚动重启指定应用 (例如: just restart bgin-api [namespace])
+restart app ns="":
+    @./scripts/cluster.sh restart "{{app}}" "{{ns}}"
+
+# 远程集群独立运维工具入口 (./scripts/remote-ops.sh)
+ops cmd="status" *args="":
+    @./scripts/remote-ops.sh "{{cmd}}" {{args}}
+
 
 # 强制刷新并触发 ArgoCD 应用同步 (默认: 全量应用, 支持指定如: just sync bgin)
 sync app="":

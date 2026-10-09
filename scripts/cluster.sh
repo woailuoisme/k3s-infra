@@ -3,6 +3,28 @@ set -euo pipefail
 
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+ORIG_KUBECONFIG="${KUBECONFIG:-}"
+
+if [ -f ".env" ]; then
+	set -a
+	# shellcheck disable=SC1091
+	source .env
+	set +a
+fi
+
+if [ -n "$ORIG_KUBECONFIG" ]; then
+	export KUBECONFIG="$ORIG_KUBECONFIG"
+fi
+
+if [ -z "${KUBECONFIG:-}" ] && [ -f "${HOME}/.kube/k3s-remote.yaml" ]; then
+	export KUBECONFIG="${HOME}/.kube/k3s-remote.yaml"
+fi
+
+find_deployment_ns() {
+	kubectl get deployment -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.metadata.name}{"\n"}{end}' \
+		| awk -v app="$1" '$2 == app {print $1; exit}'
+}
+
 cmd_argocd() {
 	helm repo add argo https://argoproj.github.io/argo-helm > /dev/null 2>&1 || true
 	helm repo update argo
@@ -23,15 +45,15 @@ cmd_init_key() {
 	local cert_file="platform/security/sealed-secrets/public-cert.pem"
 
 	if [ ! -f "$key_file" ]; then
-		echo "错误: 未找到私钥文件: $key_file (请存放在 ~/.config/sealed-secrets/master.key 或传入路径)"
+		echo "错误: 未找到私钥: $key_file" >&2
 		return 1
 	fi
 	if [ ! -f "$cert_file" ]; then
-		echo "错误: 未找到公钥证书文件: $cert_file"
+		echo "错误: 未找到证书: $cert_file" >&2
 		return 1
 	fi
 
-	echo "==> 注入 Sealed Secrets 主私钥并重启控制器..."
+	echo "==> 注入 Sealed Secrets 密钥并重启控制器"
 	kubectl -n kube-system create secret tls sealed-secrets-key \
 		--cert="$cert_file" \
 		--key="$key_file" \
@@ -54,7 +76,7 @@ cmd_verify() {
 	echo -e "\n==> SealedSecrets 资源同步状态"
 	kubectl get sealedsecrets -A -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,STATUS:.status.conditions[0].type,REASON:.status.conditions[0].reason || true
 
-	echo -e "\n==> 目标 Secret 就绪核验"
+	echo -e "\n==> Secret 就绪核验"
 	local secrets=(
 		"apps:bgin-secret"
 		"database:garage-s3-credentials"
@@ -76,15 +98,15 @@ cmd_verify() {
 		local ns="${item%%:*}"
 		local sec="${item##*:}"
 		if kubectl get secret "$sec" -n "$ns" > /dev/null 2>&1; then
-			echo -e "  \033[32m✓\033[0m [$ns] $sec"
+			echo "  [OK]   [$ns] $sec"
 		else
-			echo -e "  \033[31m✗\033[0m [$ns] $sec"
+			echo "  [FAIL] [$ns] $sec"
 			failed=$((failed + 1))
 		fi
 	done
 
 	if [ "$failed" -gt 0 ]; then
-		echo -e "\n\033[33m提示:\033[0m 有 $failed 个 Secret 未就绪，日志排查: kubectl logs -n kube-system -l app.kubernetes.io/name=sealed-secrets --tail=50"
+		echo -e "\n警告: $failed 个 Secret 未就绪" >&2
 		return 1
 	fi
 }
@@ -101,7 +123,7 @@ cmd_sync() {
 
 	if [ -z "$target" ] || [ "$target" = "all" ]; then
 		kubectl annotate app --all -n argocd argocd.argoproj.io/refresh=hard --overwrite > /dev/null
-		echo "✓ 已向全量 ArgoCD 应用发送硬刷新同步指令"
+		echo "已刷新全量 ArgoCD 应用"
 		return 0
 	fi
 
@@ -112,14 +134,12 @@ cmd_sync() {
 	fi
 
 	if [ -z "$app" ]; then
-		echo "错误: 未找到匹配的 ArgoCD 应用: $target"
-		echo "当前可用应用:"
-		kubectl get app -n argocd -o custom-columns=NAME:.metadata.name --no-headers
+		echo "错误: 未找到匹配应用: $target" >&2
 		return 1
 	fi
 
 	kubectl annotate app "$app" -n argocd argocd.argoproj.io/refresh=hard --overwrite > /dev/null
-	echo "✓ 已向应用 $app 发送硬刷新同步指令"
+	echo "已刷新应用: $app"
 }
 
 cmd_import_image() {
@@ -127,7 +147,7 @@ cmd_import_image() {
 	if command -v k3s > /dev/null 2>&1; then
 		k3s ctr images pull "$image"
 	else
-		echo "未检测到本地 k3s，请在节点执行: k3s ctr images pull $image"
+		echo "未检测到本地 k3s，请在节点执行: k3s ctr images pull $image" >&2
 	fi
 }
 
@@ -149,6 +169,44 @@ cmd_set_repo() {
 	echo "仓库地址已替换: $old_repo -> $new_repo"
 }
 
+cmd_health() {
+	echo -n "==> 探测 API Server... "
+	if ! kubectl cluster-info --request-timeout=5s > /dev/null 2>&1; then
+		echo "失败"
+		return 1
+	fi
+	echo "正常"
+
+	echo -e "\n==> 节点状态"
+	kubectl get nodes -o wide
+
+	echo -e "\n==> 异常 Pod"
+	local abnormal_pods
+	abnormal_pods=$(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers 2> /dev/null || true)
+	if [ -z "$abnormal_pods" ]; then
+		echo "  无异常 Pod"
+	else
+		echo "$abnormal_pods"
+	fi
+
+	echo -e "\n==> ArgoCD 应用健康概览"
+	kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status --no-headers 2> /dev/null || true
+}
+
+cmd_restart() {
+	local app="${1:?缺少应用名称，用法: ./scripts/cluster.sh restart <APP_NAME> [NAMESPACE]}"
+	local ns="${2:-$(find_deployment_ns "$app")}"
+
+	if [ -z "$ns" ]; then
+		echo "错误: 未找到 Deployment: $app" >&2
+		return 1
+	fi
+
+	echo "==> 重启 [$ns] deployment/$app"
+	kubectl -n "$ns" rollout restart deployment "$app"
+	kubectl -n "$ns" rollout status deployment "$app" --timeout=90s
+}
+
 cmd_help() {
 	cat << EOF
 k3s-infra 集群运维工具 (scripts/cluster.sh)
@@ -157,16 +215,18 @@ k3s-infra 集群运维工具 (scripts/cluster.sh)
   ./scripts/cluster.sh <command> [arguments...]
 
 指令:
-  init-key [KEY_FILE]      注入 Sealed Secrets 离线私钥并触发自愈解密
-  verify                   核验 13 个 Sealed Secrets 解密及生成状态
-  sync [APP]               强制刷新并触发 ArgoCD 应用同步 (默认全量)
+  health | doctor          集群健康检查 (连通性、节点、异常 Pod、ArgoCD)
+  restart <APP> [NS]       滚动重启应用 (自动匹配命名空间)
+  init-key [KEY_FILE]      注入 Sealed Secrets 私钥并触发自愈
+  verify                   核验 Sealed Secrets 解密及生成状态
+  sync [APP]               刷新 ArgoCD 应用 (默认全量)
   ps | status              查看 ArgoCD 应用状态与 Pod 列表
-  argocd                   安装或就地升级 ArgoCD (v3.0+)
-  pass                     获取 ArgoCD 初始 admin 登录密码
+  argocd                   安装或升级 ArgoCD
+  pass                     获取 ArgoCD 初始 admin 密码
   import-image [IMG]       拉取并导入镜像至 K3s containerd
-  domain <NEW> [OLD]       批量替换主域名 (默认旧域名: haoxiaoguai.xyz)
-  repo <NEW> [OLD]         批量替换 GitOps 仓库地址
-  help                     显示此帮助信息
+  domain <NEW> [OLD]       替换主域名 (默认旧域名: haoxiaoguai.xyz)
+  repo <NEW> [OLD]         替换 GitOps 仓库地址
+  help                     显示帮助信息
 EOF
 }
 
@@ -174,6 +234,8 @@ ACTION="${1:-help}"
 shift || true
 
 case "$ACTION" in
+	health | doctor) cmd_health "$@" ;;
+	restart) cmd_restart "$@" ;;
 	init-key | init-secrets) cmd_init_key "$@" ;;
 	verify | verify-secrets) cmd_verify "$@" ;;
 	sync) cmd_sync "$@" ;;
@@ -185,7 +247,7 @@ case "$ACTION" in
 	repo | set-repo) cmd_set_repo "$@" ;;
 	help | -h | --help) cmd_help ;;
 	*)
-		echo "未知命令: $ACTION (运行 './scripts/cluster.sh help' 查看帮助)"
+		echo "未知命令: $ACTION (运行 './scripts/cluster.sh help' 查看帮助)" >&2
 		exit 1
 		;;
 esac
