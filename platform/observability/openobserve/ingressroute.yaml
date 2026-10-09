@@ -1,19 +1,6 @@
 # ==============================================================================
-# OpenObserve 本地 Secret 与 Traefik IngressRoute (解耦自 Helm Chart)
+# OpenObserve Traefik IngressRoute (解耦自 Helm Chart)
 # ==============================================================================
-apiVersion: v1
-kind: Secret
-metadata:
-  name: openobserve-secrets
-  namespace: observability
-type: Opaque
-stringData:
-  root-email: "admin@gmail.com"
-  root-password: "Oo!ae13cf5850664c9a398194334d60383d"
-  auth-token: "Basic YWRtaW5AZ21haWwuY29tOk9vIWFlMTNjZjU4NTA2NjRjOWEzOTgxOTQzMzRkNjAzODNk"
-  s3-access-key: "GKfd16f76e81fb861a868a01b9b19452ad"
-  s3-secret-key: "18d5eda476ff7fb88f0bec38eae3a5e468020ae6dfc610defe2f3f72a65c4339"
----
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

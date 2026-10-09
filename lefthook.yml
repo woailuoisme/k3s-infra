@@ -1,6 +1,9 @@
 pre-commit:
   parallel: true
   jobs:
+    - name: gitleaks
+      run: gitleaks protect --staged --verbose
+
     - name: validate helm & k8s
       glob:
         - "apps/**/*"

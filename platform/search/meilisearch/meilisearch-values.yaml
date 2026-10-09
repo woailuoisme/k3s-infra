@@ -20,9 +20,12 @@ persistence:
   storageClass: "local-path"
   size: 10Gi
 
+# 鉴权凭证绑定外部 Secret (SealedSecret 声明式管理)
+auth:
+  existingMasterKeySecret: "meilisearch-master-key"
+
 # 生产环境运行模式
 environment:
   MEILI_ENV: "production"
   MEILI_NO_ANALYTICS: "true"
-  MEILI_MASTER_KEY: "bWaV7Z_2LHrn-t1LIJc3ENDT7R-svZ5tNMsuTifQfX0"
   MEILI_LOG_LEVEL: "INFO"

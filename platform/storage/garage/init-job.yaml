@@ -54,9 +54,15 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: GARAGE_DEFAULT_ACCESS_KEY
-              value: "GKfd16f76e81fb861a868a01b9b19452ad"
+              valueFrom:
+                secretKeyRef:
+                  name: garage-secrets
+                  key: default-access-key
             - name: GARAGE_DEFAULT_SECRET_KEY
-              value: "18d5eda476ff7fb88f0bec38eae3a5e468020ae6dfc610defe2f3f72a65c4339"
+              valueFrom:
+                secretKeyRef:
+                  name: garage-secrets
+                  key: default-secret-key
           command:
             - /bin/sh
             - -c

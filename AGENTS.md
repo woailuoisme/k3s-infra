@@ -26,7 +26,7 @@
   - **多媒体处理**：Imgproxy（高性能动态图片即时缩放与格式转换）。
   - **全栈可观测性**：Dozzle（轻量容器实时日志流查看器），OpenObserve（日志、指标、链路追踪三合一轻量平台），OpenTelemetry Collector（全集群遥测指标采集与转发代理）。
   - **业务核心服务**：`apps/bgin`（Go/Gin 高性能 REST API + Asynq 异步后台队列消费者）。
-- **敏感机密管理**：SOPS + Age（通过 ArgoCD 插件实现集群内存瞬时解密，0 守护进程常驻）。
+- **敏感机密管理**：Sealed Secrets（RSA 4096 离线公钥加密，原生 CRD 声明式存管，解密控制器常驻约 20MB 内存，ArgoCD 原生识别、零插件依赖）。
 
 ---
 
@@ -57,7 +57,7 @@ k3s-infra/
 ├── justfile                 # 项目核心工作流与运维任务运行器
 ├── lefthook.yml             # 本地 Git 提交/推送前自动化检查钩子
 ├── .mise.toml               # 统一工具链依赖与版本管理声明 (just, kubectl, helm, linters)
-├── .sops.yaml               # SOPS 密钥加密规则与 Age 公钥映射
+├── platform/security/sealed-secrets/ # Sealed Secrets 离线公钥证书 (public-cert.pem)
 └── AGENTS.md                # AI 编程助手专属上下文与规范指南 (本文档)
 ```
 
@@ -173,7 +173,7 @@ GitHub Actions 流水线 [`.github/workflows/gitops-ci.yml`](file:///Users/seasi
 `bootstrap/applications/` 目录下的所有 ArgoCD Application 均须配置 `argocd.argoproj.io/sync-wave` 注解，按依赖层级梯度启动，彻底规避 4C8G 规格下的启动内存瞬时洪峰：
 
 ```text
-Wave -1 : 00-namespaces (命名空间隔离、PriorityClass 优先级、LimitRange 护航)
+Wave -1 : 00-namespaces (命名空间、PriorityClass、LimitRange), 00-sealed-secrets (解密控制器)
 Wave  0 : 01-traefik (边缘网关), 02-garage (S3 对象存储底层)
 Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
@@ -199,8 +199,9 @@ Wave  6 : 20-bgin (自研业务后端负载)
 ### 6.5 密钥安全与敏感数据治理
 
 - **严禁**将明文密码、API Token 或敏感证书提交至 Git 仓库。
-- 敏感 Secret 清单必须通过 SOPS 与 Age 预先加密为 `*.enc.yaml` 文件。
-- 集群运行时由 ArgoCD 在内存中按需解密，实现 0 常驻进程、0 内存泄露的安全防护。
+- 敏感 Secret 清单必须通过 Sealed Secrets 转换为标准的 `SealedSecret` CRD（`*.sealed.yaml` 或 `sealed-secret.yaml`）。
+- 使用 `platform/security/sealed-secrets/public-cert.pem` 离线公钥证书进行加密，解密主私钥离库离线安全存管。
+- 集群运行时由 `sealed-secrets-controller` 自动解密生成标准 Kubernetes Secret，ArgoCD 零插件负担、原生识别与同步。
 
 ---
 

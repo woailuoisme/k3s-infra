@@ -1,0 +1,19 @@
+# ==============================================================================
+# Centrifugo Traefik IngressRoute (解耦自 Helm Chart)
+# ==============================================================================
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: centrifugo
+  namespace: messaging
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`centrifugo.mso.lol`)
+      kind: Rule
+      services:
+        - name: centrifugo
+          port: 8000
+  tls:
+    certResolver: cloudflare

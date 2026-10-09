@@ -7,7 +7,7 @@
 ## 目录
 
 1. [4C8G 宿主机与 K3s 调优初始化](#1-4c8g-宿主机与-k3s-调优初始化)
-2. [SOPS + Age 密钥对配置 (0 内存常驻)](#2-sops--age-密钥对配置-0-内存常驻)
+2. [Sealed Secrets 密钥安全体系 (离线公钥加密 + 原生 CRD)](#2-sealed-secrets-密钥安全体系-离线公钥加密--原生-crd)
 3. [ArgoCD 精简安装与 Root-App 引导](#3-argocd-精简安装与-root-app-引导)
 4. [GitHub Actions 自动回写与 Webhook 极速触发](#4-github-actions-自动回写与-webhook-极速触发)
 5. [常用运维与灾备指令](#5-常用运维与灾备指令)
@@ -57,43 +57,38 @@ kubectl get nodes -o wide
 
 ---
 
-## 2. SOPS + Age 密钥对配置 (0 内存常驻)
+## 2. Sealed Secrets 密钥安全体系 (离线公钥加密 + 原生 CRD)
 
-### 2.1 本地安装与生成 Age 密钥
+### 2.1 架构原理与密钥体系
 
-在您本地工作站（开发机）上执行：
+本项目采用 **Bitnami Sealed Secrets** 搭配**离线预签发 RSA 4096 密钥对**方案：
 
-```bash
-# macOS
-brew install age sops
+- **公钥证书**：保存在仓库 [`platform/security/sealed-secrets/public-cert.pem`](../platform/security/sealed-secrets/public-cert.pem)，可安全公开并随代码提交。开发者或 CI 使用此公钥随时加密敏感 Secret。
+- **解密主私钥**：在集群外安全生成并离线冷备份至安全密钥库（如 1Password），严禁提交至 Git。
+- **集群端控制器**：由 ArgoCD 在 Sync Wave -1 自动部署 `sealed-secrets-controller`（仅约 20MB 内存），ArgoCD 自身无需安装任何第三方插件或挂载私钥卷。
 
-# 生成 age 密钥对 (注意保管好私钥)
-mkdir -p ~/.config/sops/age
-age-keygen -o ~/.config/sops/age/keys.txt
+### 2.2 灾难恢复与集群初始化注入私钥 (新集群只需执行一次)
 
-# 查看生成的公钥 (形如 age1...)
-cat ~/.config/sops/age/keys.txt | grep "public key"
-```
-
-### 2.2 更新仓库公钥
-
-将生成的公钥填入本仓库根目录的 [`.sops.yaml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/.sops.yaml) 中：
-
-```yaml
-creation_rules:
-  - path_regex: .*\.enc\.ya?ml$
-    age: "您的_AGE_PUBLIC_KEY"
-```
-
-### 2.3 注入私钥至 K3s 集群 (仅需执行一次)
-
-将本地生成的私钥写入 K3s 集群中，供 ArgoCD 容器在内存中按需热解密：
+在新集群部署或灾难恢复时，在 Sealed Secrets Controller 启动前将私钥与证书预先注入 `kube-system`：
 
 ```bash
-kubectl create namespace argocd
-kubectl create secret generic helm-secrets-private-keys \
-  -n argocd \
-  --from-file=key.txt=$HOME/.config/sops/age/keys.txt
+# 导入离线私钥与证书至 kube-system (注意替换私钥文件路径)
+kubectl -n kube-system create secret tls sealed-secrets-key \
+  --cert=platform/security/sealed-secrets/public-cert.pem \
+  --key="$HOME/.config/sealed-secrets/master.key"
+
+# 打上控制器识别标签
+kubectl -n kube-system label secret sealed-secrets-key \
+  sealedsecrets.bitnami.com/sealed-secrets-key=active
+```
+
+### 2.3 日常加密操作
+
+使用 `just` 命令快速加密明文 Secret 并生成入库的 SealedSecret 清单：
+
+```bash
+# 示例：加密本地临时 Secret 并输出到目标路径
+just seal my-secret.yaml platform/security/authelia/sealed-secret.yaml
 ```
 
 ---
@@ -102,7 +97,7 @@ kubectl create secret generic helm-secrets-private-keys \
 
 ### 3.1 使用官方 Helm Chart 部署精简版 ArgoCD (v3.0+ / Chart 10.x)
 
-采用我们在 [`bootstrap/argocd-values.yaml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/bootstrap/argocd-values.yaml) 中优化的轻量配置（适配 ArgoCD v3.0+ 细粒度 RBAC、禁用 Dex、裁剪 Redis、注入 SOPS+Age）：
+采用我们在 [`bootstrap/argocd-values.yaml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/bootstrap/argocd-values.yaml) 中优化的轻量配置（适配 ArgoCD v3.0+ 细粒度 RBAC、禁用 Dex、裁剪 Redis）：
 
 可以直接使用 just 命令一键部署或升级：
 

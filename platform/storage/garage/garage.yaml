@@ -1,33 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: garage-config
-  namespace: storage
-data:
-  garage.toml: |
-    metadata_dir = "/var/lib/garage/meta"
-    data_dir = "/var/lib/garage/data"
-    metadata_snapshots_dir = "/var/lib/garage/meta-snapshots"
-    metadata_auto_snapshot_interval = "6h"
-
-    db_engine = "lmdb"
-    replication_factor = 1
-
-    rpc_bind_addr = "[::]:3901"
-    rpc_public_addr = "garage.storage.svc:3901"
-    rpc_secret = "5368ea7003a35eebcaf25c618fab1c3ad1dbae01b8fc5d1fba4c737e5a955751"
-
-    [s3_api]
-    s3_region = "garage"
-    api_bind_addr = "[::]:3900"
-    root_domain = ".s3.garage"
-
-    [admin]
-    api_bind_addr = "[::]:3903"
-    admin_token = "A5Q4zO27rJ4Xlz/Ojuoj2obCbL1aFGe9SugGt066loQ="
-    metrics_token = "VZaAJqzH0ZhWjOGSen95AEyOgJEVYf/engNWdKIxoo4="
-    metrics_require_token = true
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -83,8 +53,8 @@ spec:
             periodSeconds: 20
       volumes:
         - name: config
-          configMap:
-            name: garage-config
+          secret:
+            secretName: garage-config
   volumeClaimTemplates:
     - metadata:
         name: garage-data

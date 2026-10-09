@@ -1,48 +1,92 @@
-**/homepage/logs
-/data/
-/backup/
+# ==============================================================================
+# Git 忽略规则 (.gitignore) - k3s-infra 生产云原生基础设施
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. 密钥、私钥与临时解密文件 (0 凭据入库防护)
+# ------------------------------------------------------------------------------
+# 私钥与证书文件
+*.key
+*.priv
+*.age
+*.pem
+*.crt
+# 白名单放行 Sealed Secrets 离线公钥证书
+!platform/security/sealed-secrets/public-cert.pem
+
+# 密钥文本与凭据导出
+*keys.txt
+*.keys.json
+.sealed-secrets-master.key
+iam/open-bao/.keys.json
+iam/open-bao/.approle-credentials.txt
+**/pgbouncer/userlist.txt
+**/mosquitto/config/passwd
+
+# 临时明文与解密中间文件
+*.dec.yaml
+*.dec.yml
+*.plain.yaml
+*.plain.yml
+*.unenc.yaml
+*.unenc.yml
+*.tmp.yaml
+*.tmp.yml
+*.secret.local.yaml
+*.secret.local.yml
+
+# ------------------------------------------------------------------------------
+# 2. 环境变量与本地配置 (.env)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
 /.env
 /logs/
-.env
-.env.local
-.env.product
-/iam/authelia/db.sqlite3
+/data/
+/backup/
 
-**/3xui/db/**
-**/sui/db/**
-**/sui/cert/**
-.zed
-.codebuddy
-.qoder
-.idea
-# .vscode
-.DS_Store
-.claude
-.agents
-.agent
-**/.DS_Store
-
+# 证书工具与域名配置
 cloudflare.ini
 aliyun.ini
 registry.ini
-./scripts/registry.ini
-
-./certbot/conf/aliyun.ini
-./certbot/conf/cloudflare.ini
-
+scripts/registry.ini
 certbot/conf/renewal/
+certbot/conf/aliyun.ini
+certbot/conf/cloudflare.ini
 ssh/
-iam/authelia/config/db.sqlite3
-# OpenBao 初始化凭据（含 unseal key 与 root token）
-iam/open-bao/.keys.json
-# OpenBao 应用侧 AppRole 凭据（role_id / secret_id）
-iam/open-bao/.approle-credentials.txt
 
-**/pgbouncer/userlist.txt
+# ------------------------------------------------------------------------------
+# 3. 操作系统与 IDE / 终端工具
+# ------------------------------------------------------------------------------
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# IDE 与编辑器
+.idea/
+.zed/
+.vscode/
+*.swp
+*.swo
+*~
+.codebuddy
+.qoder
 .kiro
-/scripts/setup-github-secrets.sh
-**/mosquitto/config/passwd
 
-**/simulators/nodejs/node_modules
-.agents/skills
+# AI Agent 临时与缓存目录
+.claude/
+.agents/skills/
+.agent/
+
+# ------------------------------------------------------------------------------
+# 4. 依赖包与本地状态缓存
+# ------------------------------------------------------------------------------
+**/node_modules/
+**/homepage/logs/
+iam/authelia/db.sqlite3
+iam/authelia/config/db.sqlite3
 devtools/argocd/kube/config
+**/3xui/db/**
+**/sui/db/**
+**/sui/cert/**

@@ -84,16 +84,6 @@ spec:
       port: 8080
       targetPort: 8080
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: imgproxy-secrets
-  namespace: media
-type: Opaque
-stringData:
-  key: "016bb66d0d40f8f746c0c327eca2232495bb367e90f5d0124329a0fea07c929b"
-  salt: "07c466cebbed802f7b449c67dfad29f393df60f09ffbd2af47462f88791e3ab5"
----
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

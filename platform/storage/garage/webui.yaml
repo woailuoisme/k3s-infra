@@ -31,7 +31,10 @@ spec:
             - name: CONFIG_PATH
               value: "/etc/garage.toml"
             - name: API_ADMIN_KEY
-              value: "A5Q4zO27rJ4Xlz/Ojuoj2obCbL1aFGe9SugGt066loQ="
+              valueFrom:
+                secretKeyRef:
+                  name: garage-secrets
+                  key: admin-token
           ports:
             - name: http
               containerPort: 3909
@@ -51,8 +54,8 @@ spec:
               mountPath: /tmp
       volumes:
         - name: config
-          configMap:
-            name: garage-config
+          secret:
+            secretName: garage-config
         - name: tmp
           emptyDir:
             medium: Memory

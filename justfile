@@ -4,10 +4,19 @@ set dotenv-load := false
 default:
     @just --list
 
-# 运行全量静态检测 (Dockerfile, YAML, Kustomize, Helm)
-check: _lint-docker _lint-k8s _lint-kustomize _lint-helm
+# 运行全量静态检测 (Dockerfile, YAML, Kustomize, Helm, Secrets)
+check: _lint-docker _lint-k8s _lint-kustomize _lint-helm _lint-secrets
 validate: check
 lint: check
+
+# 敏感信息静态检测 (Gitleaks)
+scan:
+    @gitleaks detect --no-git --config .gitleaks.toml --verbose
+
+# 快速使用 Sealed Secrets 离线公钥加密 Secret 清单
+seal src dst:
+    @kubeseal --cert platform/security/sealed-secrets/public-cert.pem --format yaml < "{{src}}" > "{{dst}}"
+    @echo "Sealed {{src}} -> {{dst}} using offline public cert."
 
 # 自动格式化 Shell 脚本与 Markdown 文档
 fmt: _fmt-sh _fmt-md
@@ -98,6 +107,9 @@ _lint-helm:
     else \
         echo "No Helm charts in apps/, skipping."; \
     fi
+
+_lint-secrets:
+    @gitleaks detect --no-git --config .gitleaks.toml
 
 _fmt-sh:
     @find . -name "*.sh" -not -path "*/node_modules/*" -exec shfmt -w {} +

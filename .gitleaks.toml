@@ -1,0 +1,13 @@
+title = "k3s-infra gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for encrypted and template files"
+paths = [
+  '''(?i).*sealed.*\.ya?ml$''',
+  '''(?i)platform/security/sealed-secrets/public-cert\.pem$''',
+  '''(?i).*\.example$''',
+  '''(?i)docs/.*''',
+]

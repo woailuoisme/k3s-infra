@@ -93,7 +93,7 @@ certificatesResolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"
 
-# 从 Secret 注入 Cloudflare API 凭证 (由 SOPS 加密生成)
+# 从 Secret 注入 Cloudflare API 凭证 (由 SealedSecret 解密生成)
 env:
   - name: CF_DNS_API_TOKEN
     valueFrom:
@@ -102,15 +102,8 @@ env:
         key: token
         optional: true
 
-# 自动创建 Cloudflare API Token 密钥对象 (生产可通过 SOPS + Age 加密)
+# 注入 Traefik 原生 IngressRoute (API Dashboard 入口)
 extraObjects:
-  - apiVersion: v1
-    kind: Secret
-    metadata:
-      name: cloudflare-api-token
-    type: Opaque
-    stringData:
-      token: "ucr-vmC64fatSAfVcpIYkglzGxPcbBHFqUOp_ysL"
   - apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:

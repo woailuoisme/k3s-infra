@@ -1,7 +1,7 @@
 # ==============================================================================
 # ArgoCD 4C8G 生产精简调优 Values (ArgoCD v3.0+ 官方 Helm Chart 10.x)
 # ==============================================================================
-# 目标：在单台 4C8G 节点上将 ArgoCD 整体内存消耗压制在 350MB-450MB，并集成 SOPS+Age 解密
+# 目标：在单台 4C8G 节点上将 ArgoCD 整体内存消耗压制在 350MB-450MB (纯原生 GitOps 编排，免插件免常驻)
 # ==============================================================================
 
 global:
@@ -25,7 +25,7 @@ controller:
     enabled: true
 
 # ------------------------------------------------------------------------------
-# 2. 清单与配置生成服务端 (Repo Server) - 内置 SOPS + Age 无常驻解密
+# 2. 清单与配置生成服务端 (Repo Server) - 原生极简纯净模式 (由 Sealed Secrets 纳管密文)
 # ------------------------------------------------------------------------------
 repoServer:
   replicas: 1
@@ -38,53 +38,7 @@ repoServer:
     limits:
       cpu: 500m
       memory: 512Mi
-  # 挂载 Age 私钥与自定义工具共享卷
-  volumes:
-    - name: age-key-volume
-      secret:
-        secretName: helm-secrets-private-keys
-        items:
-          - key: key.txt
-            path: key.txt
-    - name: custom-tools
-      emptyDir: {}
-  volumeMounts:
-    - name: age-key-volume
-      mountPath: /helm-secrets-private-keys
-      readOnly: true
-    - name: custom-tools
-      mountPath: /custom-tools
-  env:
-    - name: SOPS_AGE_KEY_FILE
-      value: /helm-secrets-private-keys/key.txt
-    - name: PATH
-      value: /custom-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-  # 初始化容器自动注入 SOPS 与 Age 二进制工具 (具备网络重试与幂等检测)
-  initContainers:
-    - name: install-sops-age
-      image: alpine:3.21
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          set -e
-          ARCH="amd64"
-          if [ "$(uname -m)" = "aarch64" ]; then ARCH="arm64"; fi
-          # 幂等下载 sops v3.9.4 (带超时与重试)
-          if [ ! -x /custom-tools/sops ]; then
-            wget -q -T 15 -t 3 -O /custom-tools/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.${ARCH}
-            chmod +x /custom-tools/sops
-          fi
-          # 幂等下载 age v1.2.1 (带超时与重试)
-          if [ ! -x /custom-tools/age ]; then
-            wget -q -T 15 -t 3 -O - https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-${ARCH}.tar.gz | tar -xz -C /tmp
-            mv /tmp/age/age /custom-tools/age
-            chmod +x /custom-tools/age
-            rm -rf /tmp/age
-          fi
-      volumeMounts:
-        - name: custom-tools
-          mountPath: /custom-tools
-  extraContainers: []
+
 
 # ------------------------------------------------------------------------------
 # 3. 内部缓存 Redis (单机极致精简)
