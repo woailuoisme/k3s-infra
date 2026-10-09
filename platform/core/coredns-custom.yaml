@@ -4,15 +4,16 @@ metadata:
   name: coredns-custom
   namespace: kube-system
 data:
-  # 覆盖默认服务器块中的本地解析规则（确保集群内部直接回环解析本集群入口）
-  hosts.override: |
-    hosts {
-        127.0.0.1 mso.lol
-        127.0.0.1 api.mso.lol
-        127.0.0.1 auth.mso.lol
-        127.0.0.1 search.mso.lol
-        127.0.0.1 s3.mso.lol
-        127.0.0.1 gateway.mso.lol
-        127.0.0.1 argocd.mso.lol
-        fallthrough
+  # 占位文件避免缺少 *.override 导致 CoreDNS 周期性打印 No files matching 告警
+  empty.override: ""
+  # 独立服务器块解析集群本地入口，彻底消除 No files matching *.server 告警，并规避与 .:53 hosts 插件冲突
+  custom.server: |
+    mso.lol:53 {
+        errors
+        cache 30
+        hosts {
+            10.43.204.251 mso.lol api.mso.lol auth.mso.lol search.mso.lol s3.mso.lol gateway.mso.lol argocd.mso.lol
+            fallthrough
+        }
+        forward . /etc/resolv.conf
     }
