@@ -23,43 +23,38 @@ cmd_init_key() {
 	local cert_file="platform/security/sealed-secrets/public-cert.pem"
 
 	if [ ! -f "$key_file" ]; then
-		echo "错误: 未找到私钥文件: $key_file"
-		echo "请确保私钥存放在 ~/.config/sealed-secrets/master.key 或传入路径: ./scripts/cluster.sh init-key <PATH>"
+		echo "错误: 未找到私钥文件: $key_file (请存放在 ~/.config/sealed-secrets/master.key 或传入路径)"
 		return 1
 	fi
-
 	if [ ! -f "$cert_file" ]; then
 		echo "错误: 未找到公钥证书文件: $cert_file"
 		return 1
 	fi
 
-	echo "==> 1. 注入 Sealed Secrets 离线主私钥到 kube-system..."
+	echo "==> 注入 Sealed Secrets 主私钥并重启控制器..."
 	kubectl -n kube-system create secret tls sealed-secrets-key \
 		--cert="$cert_file" \
 		--key="$key_file" \
 		--dry-run=client -o yaml | kubectl apply -f -
 
-	echo "==> 2. 标记私钥为 active 激活状态..."
 	kubectl -n kube-system label secret sealed-secrets-key \
-		sealedsecrets.bitnami.com/sealed-secrets-key=active --overwrite
+		sealedsecrets.bitnami.com/sealed-secrets-key=active --overwrite > /dev/null
 
-	echo "==> 3. 重启 sealed-secrets-controller 触发全量解密自愈..."
 	kubectl -n kube-system rollout restart deployment sealed-secrets-controller
 	kubectl -n kube-system rollout status deployment sealed-secrets-controller --timeout=60s
 
-	echo -e "\n==> 4. 正在验证 Secret 解密与生成状态..."
-	sleep 3
+	sleep 2
 	cmd_verify
 }
 
 cmd_verify() {
-	echo "==> 1. Sealed Secrets 主密钥状态"
+	echo "==> Sealed Secrets 控制器密钥"
 	kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key=active || true
 
-	echo -e "\n==> 2. SealedSecrets 同步状态"
+	echo -e "\n==> SealedSecrets 资源同步状态"
 	kubectl get sealedsecrets -A -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,STATUS:.status.conditions[0].type,REASON:.status.conditions[0].reason || true
 
-	echo -e "\n==> 3. 标准 Secret 存在性对照"
+	echo -e "\n==> 目标 Secret 就绪核验"
 	local secrets=(
 		"apps:bgin-secret"
 		"database:garage-s3-credentials"
@@ -89,7 +84,7 @@ cmd_verify() {
 	done
 
 	if [ "$failed" -gt 0 ]; then
-		echo -e "\n\033[33m提示:\033[0m 有 $failed 个 Secret 未就绪，排查日志: kubectl logs -n kube-system -l app.kubernetes.io/name=sealed-secrets --tail=50"
+		echo -e "\n\033[33m提示:\033[0m 有 $failed 个 Secret 未就绪，日志排查: kubectl logs -n kube-system -l app.kubernetes.io/name=sealed-secrets --tail=50"
 		return 1
 	fi
 }
@@ -105,27 +100,26 @@ cmd_sync() {
 	local target="${1:-}"
 
 	if [ -z "$target" ] || [ "$target" = "all" ]; then
-		echo "==> 强制全量刷新并触发 ArgoCD 应用同步..."
-		kubectl annotate app --all -n argocd argocd.argoproj.io/refresh=hard --overwrite
-		echo "✓ 已向所有 ArgoCD 应用发送硬刷新指令"
-	else
-		local app
-		app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "(^|-)${target}$" || true) | head -n 1)
-		if [ -z "$app" ]; then
-			app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep "${target}" || true) | head -n 1)
-		fi
-
-		if [ -z "$app" ]; then
-			echo "错误: 未找到匹配的 ArgoCD 应用: $target"
-			echo "当前可用应用:"
-			kubectl get app -n argocd -o custom-columns=NAME:.metadata.name --no-headers
-			return 1
-		fi
-
-		echo "==> 强制刷新并触发应用同步: $app..."
-		kubectl annotate app "$app" -n argocd argocd.argoproj.io/refresh=hard --overwrite
-		echo "✓ 已向应用 $app 发送硬刷新指令"
+		kubectl annotate app --all -n argocd argocd.argoproj.io/refresh=hard --overwrite > /dev/null
+		echo "✓ 已向全量 ArgoCD 应用发送硬刷新同步指令"
+		return 0
 	fi
+
+	local app
+	app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "(^|-)${target}$" || true) | head -n 1)
+	if [ -z "$app" ]; then
+		app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep "${target}" || true) | head -n 1)
+	fi
+
+	if [ -z "$app" ]; then
+		echo "错误: 未找到匹配的 ArgoCD 应用: $target"
+		echo "当前可用应用:"
+		kubectl get app -n argocd -o custom-columns=NAME:.metadata.name --no-headers
+		return 1
+	fi
+
+	kubectl annotate app "$app" -n argocd argocd.argoproj.io/refresh=hard --overwrite > /dev/null
+	echo "✓ 已向应用 $app 发送硬刷新同步指令"
 }
 
 cmd_import_image() {
@@ -133,7 +127,7 @@ cmd_import_image() {
 	if command -v k3s > /dev/null 2>&1; then
 		k3s ctr images pull "$image"
 	else
-		echo "未检测到本地 k3s，请在目标节点执行: k3s ctr images pull $image"
+		echo "未检测到本地 k3s，请在节点执行: k3s ctr images pull $image"
 	fi
 }
 
@@ -141,11 +135,8 @@ cmd_set_domain() {
 	local new_domain="${1:?缺少新域名参数，用法: just domain <NEW_DOMAIN> [OLD_DOMAIN]}"
 	local old_domain="${2:-haoxiaoguai.xyz}"
 
-	find bootstrap platform apps -type f \( -name "*.yaml" -o -name "*.md" \) \
+	find bootstrap platform apps README.md -type f \( -name "*.yaml" -o -name "*.md" \) \
 		-exec perl -pi -e "s/\Q$old_domain\E/$new_domain/g" {} +
-	if [ -f README.md ]; then
-		perl -pi -e "s/\Q$old_domain\E/$new_domain/g" README.md
-	fi
 	echo "域名已替换: $old_domain -> $new_domain"
 }
 
