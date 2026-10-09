@@ -49,6 +49,11 @@ ps:
     @./scripts/cluster.sh ps
 status: ps
 
+# 强制刷新并触发 ArgoCD 应用同步 (默认: 全量应用, 支持指定如: just sync bgin)
+sync app="":
+    @./scripts/cluster.sh sync "{{app}}"
+refresh app="": (sync app)
+
 # 注入 Sealed Secrets 离线主私钥并触发全量自愈解密
 init-key key="$HOME/.config/sealed-secrets/master.key":
     @./scripts/cluster.sh init-key "{{key}}"

@@ -101,6 +101,33 @@ cmd_ps() {
 	kubectl get pods -A
 }
 
+cmd_sync() {
+	local target="${1:-}"
+
+	if [ -z "$target" ] || [ "$target" = "all" ]; then
+		echo "==> 强制全量刷新并触发 ArgoCD 应用同步..."
+		kubectl annotate app --all -n argocd argocd.argoproj.io/refresh=hard --overwrite
+		echo "✓ 已向所有 ArgoCD 应用发送硬刷新指令"
+	else
+		local app
+		app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "(^|-)${target}$" || true) | head -n 1)
+		if [ -z "$app" ]; then
+			app=$( (kubectl get app -n argocd -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep "${target}" || true) | head -n 1)
+		fi
+
+		if [ -z "$app" ]; then
+			echo "错误: 未找到匹配的 ArgoCD 应用: $target"
+			echo "当前可用应用:"
+			kubectl get app -n argocd -o custom-columns=NAME:.metadata.name --no-headers
+			return 1
+		fi
+
+		echo "==> 强制刷新并触发应用同步: $app..."
+		kubectl annotate app "$app" -n argocd argocd.argoproj.io/refresh=hard --overwrite
+		echo "✓ 已向应用 $app 发送硬刷新指令"
+	fi
+}
+
 cmd_import_image() {
 	local image="${1:-jiaoio/postgres:18-trixie}"
 	if command -v k3s > /dev/null 2>&1; then
@@ -141,6 +168,7 @@ k3s-infra 集群运维工具 (scripts/cluster.sh)
 指令:
   init-key [KEY_FILE]      注入 Sealed Secrets 离线私钥并触发自愈解密
   verify                   核验 13 个 Sealed Secrets 解密及生成状态
+  sync [APP]               强制刷新并触发 ArgoCD 应用同步 (默认全量)
   ps | status              查看 ArgoCD 应用状态与 Pod 列表
   argocd                   安装或就地升级 ArgoCD (v3.0+)
   pass                     获取 ArgoCD 初始 admin 登录密码
@@ -157,6 +185,7 @@ shift || true
 case "$ACTION" in
 	init-key | init-secrets) cmd_init_key "$@" ;;
 	verify | verify-secrets) cmd_verify "$@" ;;
+	sync) cmd_sync "$@" ;;
 	ps | status) cmd_ps "$@" ;;
 	argocd | install-argocd | upgrade-argocd) cmd_argocd "$@" ;;
 	pass) cmd_pass "$@" ;;
