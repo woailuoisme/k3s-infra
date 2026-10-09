@@ -25,6 +25,7 @@ spec:
           image: ghcr.io/woailuoisme/gin-bun
           imagePullPolicy: IfNotPresent
           command:
+            - "/app/bgin"
             - "queue:work"
           envFrom:
             - configMapRef:
