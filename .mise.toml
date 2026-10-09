@@ -1,21 +1,30 @@
 [tools]
-# --- 构建 & 任务 ---
-just = "latest" # 任务运行器，Makefile 替代品
+# --- 构建 & 任务运行 ---
+just = "latest" # 任务运行器，Makefile 现代化替代品
 
-# --- 代码质量与安全 ---
-shellcheck = "latest" # Shell 脚本静态分析
-shfmt = "latest"      # Shell 脚本格式化
-hadolint = "latest"   # Dockerfile lint
-actionlint = "latest" # GitHub Actions workflow lint
-lefthook = "latest"   # Git hooks 管理
-gitleaks = "latest"   # 密钥与敏感信息静态检测
+# --- 代码质量、规范与安全门禁 ---
+shellcheck = "latest" # Shell 脚本静态语法分析
+shfmt = "latest" # Shell 脚本格式化
+hadolint = "latest" # Dockerfile 语法与最佳实践规范
+actionlint = "latest" # GitHub Actions 工作流静态校验
+yamllint = "latest" # YAML 语法与缩进静态检测
+rumdl = "latest" # Markdown 格式化与规范校验
+gitleaks = "latest" # 密钥与敏感信息静态扫描
+lefthook = "latest" # 极速 Git Hooks 管理器
 
-# --- 机密安全与加密 ---
-kubeseal = "latest" # Sealed Secrets 声明式加密 CLI
+# --- 数据与清单处理 ---
+yq = "latest" # 轻量高性能 YAML 命令行处理器
 
-# --- Kubernetes ---
-kubectl = "latest" # K8s 命令行工具
-helm = "latest"    # K8s 包管理器
-k9s = "latest"     # 终端 K8s 交互 UI
-kubectx = "latest" # 快速切换 cluster / namespace
-stern = "latest"   # 多 pod 日志聚合
+# --- 敏感机密声明式管理 ---
+kubeseal = "latest" # Bitnami Sealed Secrets 离线公钥加密 CLI
+
+# --- Kubernetes 核心与 GitOps 工具链 ---
+kubectl = "latest" # Kubernetes 官方命令行工具
+helm = "latest" # 云原生 Helm 包管理器
+kustomize = "latest" # 独立版 Kustomize 清单声明式打包工具
+argocd = "latest" # ArgoCD 官方 CLI 客户端
+kubeconform = "latest" # 高性能纯离线 K8s 清单 OpenAPI Schema 语法校验器
+
+# --- 终端交互与故障排查 ---
+k9s = "latest" # 全功能终端 Kubernetes 交互式 TUI
+stern = "latest" # 跨多 Pod 与命名空间日志正则聚合查看器
