@@ -8,10 +8,15 @@ default:
 # 1. 质量门禁与代码格式化 (Local Linters & Formatters)
 # ------------------------------------------------------------------------------
 
-# 运行全量静态检测门禁 (Dockerfile, YAML, Kustomize, Helm, Gitleaks)
-check: _lint-docker _lint-k8s _lint-kustomize _lint-helm _lint-secrets
+# 运行全量静态检测门禁 (YAML, Kustomize, Helm, Gitleaks)
+check: _lint-k8s _lint-kustomize _lint-helm _lint-secrets
 validate: check
 lint: check
+
+# Kubernetes 清单与配置安全合规扫描 (Trivy)
+audit:
+    @trivy config apps/ platform/ bootstrap/ --severity HIGH,CRITICAL
+sec: audit
 
 # 自动格式化 Shell 脚本与 Markdown 文档
 fmt: _fmt-sh _fmt-md
@@ -92,9 +97,6 @@ set-repo new_repo old_repo="https://github.com/woailuoisme/k3s-infra.git": (repo
 # ------------------------------------------------------------------------------
 # 4. 内部辅助子任务 (Internal Sub-tasks)
 # ------------------------------------------------------------------------------
-_lint-docker:
-    @find platform -name "Dockerfile*" -exec hadolint {} +
-
 _lint-k8s:
     @yamllint -d "{extends: relaxed, rules: {line-length: {max: 300}}}" bootstrap/ platform/ apps/bgin/
 

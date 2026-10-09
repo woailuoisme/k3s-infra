@@ -91,7 +91,8 @@ just pass
 
 | 指令 | 说明 |
 | :--- | :--- |
-| `just check` | 运行全量静态检测门禁（YAML, Helm, Dockerfile, Gitleaks）（别名：`validate`, `lint`） |
+| `just check` | 运行全量静态检测门禁（YAML, Helm, Kustomize, Gitleaks）（别名：`validate`, `lint`） |
+| `just audit` | 运行 Trivy 对全仓 Kubernetes 清单进行安全合规与风险检测（别名：`sec`） |
 | `just fmt` | 自动格式化 Shell 脚本与 Markdown 文档（别名：`fix`） |
 | `just up` | 引导启动或同步 ArgoCD 根应用 (App-of-Apps)（别名：`bootstrap`） |
 | `just ps` | 查看全集群 Pod 运行健康度与 ArgoCD 应用同步状态（别名：`status`） |

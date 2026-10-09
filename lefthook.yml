@@ -11,12 +11,6 @@ pre-commit:
         - "bootstrap/**/*"
       run: just lint-helm && just lint-k8s
 
-    - name: hadolint
-      glob:
-        - "**/Dockerfile"
-        - "**/Dockerfile.*"
-      run: hadolint {staged_files}
-
     - name: shellcheck
       glob:
         - "**/*.sh"

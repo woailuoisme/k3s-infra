@@ -80,7 +80,10 @@ lefthook install
 - `just`：自动化任务运行器（对应根目录 [`justfile`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/justfile)）。
 - `kubectl` 与 `helm`：Kubernetes 集群交互与 Helm 包管理器。
 - `yamllint`：YAML 文件静态语法与缩进格式校验。
-- `hadolint`：Dockerfile 规范与最佳实践检测。
+- `kubeconform`：纯离线高性能 Kubernetes 清单 OpenAPI 模式校验器。
+- `trivy`：Kubernetes 清单与配置安全合规与提权风险扫描器。
+- `dyff`：专为 YAML/JSON 清单设计的高可读性结构化语义差异比对工具。
+- `kubecolor`：kubectl 终端状态彩色高亮输出增强器。
 - `shellcheck` 与 `shfmt`：Shell 脚本语法检查与格式化工具。
 - `actionlint`：GitHub Actions Workflow 语法校验器。
 - `rumdl`：Markdown 规范校验与代码格式化工具。
@@ -94,6 +97,7 @@ lefthook install
 | 命令 | 用途说明 |
 | :--- | :--- |
 | `just check` | 运行全量静态检测门禁（别名：`validate`, `lint`） |
+| `just audit` | 运行 Trivy 对全仓 Kubernetes 清单进行安全合规与风险检测（别名：`sec`） |
 | `just fmt` | 自动格式化所有 Shell 脚本 (`shfmt`) 与 Markdown 文档 (`rumdl fmt`)（别名：`fix`） |
 | `just render [app]` | 渲染指定应用的 Kustomize 最终清单至终端（默认应用：`bgin`，别名：`template`） |
 | `just import-image [IMG]` | 快速拉取或导入预构建镜像至 K3s containerd（默认：`jiaoio/postgres:18-trixie`） |
@@ -133,7 +137,6 @@ lefthook run pre-commit
 GitHub Actions 流水线 [`.github/workflows/gitops-ci.yml`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/.github/workflows/gitops-ci.yml) 会在每次 PR 与推送到 `main` 分支时自动触发：
 
 - 对全仓 YAML 执行 `yamllint` 检查。
-- 对所有 Dockerfile 执行 `hadolint` 规范扫描。
 - 对所有 Shell 脚本执行 `shellcheck` 校验。
 - 对所有 Workflow 执行 `actionlint` 检查。
 - 执行 `just validate`，确保每个 Kustomize 目录均能正常渲染且无语法漂移。
@@ -211,7 +214,7 @@ Wave  6 : 20-bgin (自研业务后端负载)
 - **Commit 信息格式**：严格遵循 [Conventional Commits](https://www.conventionalcommits.org/) 约定规范：
   - `feat(gateway): add traefik ratelimit middleware`
   - `fix(postgres): adjust memory limit to 1024Mi`
-  - `chore(ci): update hadolint action version`
+  - `chore(ci): update actionlint version`
   - `docs(gitops): update sync wave table`
 - **提交前置校验**：所有分支合并与提交前，本地必须通过 `just validate` 与 `actionlint .github/workflows/*.yml`。
 
