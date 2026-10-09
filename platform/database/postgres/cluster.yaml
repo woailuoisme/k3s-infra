@@ -76,8 +76,6 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS pg_cron;
         - CREATE EXTENSION IF NOT EXISTS dblink;
         - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-        - CREATE DATABASE authelia OWNER app;
-        - GRANT ALL PRIVILEGES ON DATABASE authelia TO app;
       postInitApplicationSQLRefs:
         configMapRefs:
           - name: postgres-init-scripts

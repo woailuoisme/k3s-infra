@@ -1,5 +1,6 @@
 # ==============================================================================
 # Authelia 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
+# 采用本地 SQLite3 + 加密 Cookie 会话，零外部数据库依赖 (无 Postgres / Redis 依赖)
 # ==============================================================================
 
 pod:
@@ -23,6 +24,16 @@ pod:
       subPath: users_database.yml
       readOnly: true
 
+# 暴露 Service 端口 9091 (对齐 Traefik ForwardAuth 中间件与 IngressRoute)
+service:
+  port: 9091
+
+# 持久化存储 SQLite3 数据库 (local-path PVC 挂载至 /config)
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 100Mi
+
 configMap:
   theme: light
   server:
@@ -30,23 +41,17 @@ configMap:
       read: 4096
       write: 4096
 
-  # 会话存储对接内网 Valkey
+  # 会话存储 (基于 session.encryption.key 进行客户端加密 Cookie 验证，零 Redis 依赖)
   session:
     cookies:
       - domain: "mso.lol"
         subdomain: "auth"
-    redis:
-      host: "valkey-primary.database.svc"
-      port: 6379
-      database_index: 1
 
-  # 持久化存储对接内网 CloudNative-PG Postgres
+  # 持久化存储 (内嵌轻量级 SQLite3 引擎，零网络开销与零数据库外部依赖)
   storage:
-    postgres:
+    local:
       enabled: true
-      address: "tcp://postgres-cluster-rw.database.svc:5432"
-      database: "authelia"
-      username: "app"
+      path: /config/db.sqlite3
 
   # 认证用户源 (文件后端，挂载 authelia-users ConfigMap)
   authentication_backend:
