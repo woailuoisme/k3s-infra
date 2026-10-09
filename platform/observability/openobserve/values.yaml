@@ -1,0 +1,57 @@
+# ==============================================================================
+# OpenObserve 官方 Standalone Helm Values (对齐 Garage S3 持久化，4C8G 调优)
+# ==============================================================================
+fullnameOverride: "openobserve"
+
+image:
+  oss:
+    tag: "v1.0.1"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 800m
+    memory: 512Mi
+
+priorityClassName: observability-low
+
+persistence:
+  enabled: true
+  storageClassName: "local-path"
+  size: 2Gi
+
+config:
+  ZO_LOCAL_MODE: "true"
+  ZO_LOCAL_MODE_STORAGE: "s3"
+  ZO_S3_PROVIDER: "s3"
+  ZO_S3_SERVER_URL: "http://garage.storage.svc:3900"
+  ZO_S3_BUCKET_NAME: "default"
+  ZO_S3_REGION_NAME: "garage"
+  ZO_COMPACT_ENABLED: "true"
+  ZO_TELEMETRY: "false"
+
+authSecret:
+  existingRootUserSecret:
+    name: "openobserve-secrets"
+    emailKey: "root-email"
+    passwordKey: "root-password"
+
+extraEnv:
+  - name: ZO_S3_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-secrets
+        key: s3-access-key
+  - name: ZO_S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openobserve-secrets
+        key: s3-secret-key
+
+service:
+  type: ClusterIP
+  ports:
+    http:
+      port: 5080

@@ -4,15 +4,28 @@ metadata:
   name: 10-openobserve
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/observability/openobserve
+  sources:
+    # 1. 官方 OpenObserve Standalone Helm Chart 仓库
+    - repoURL: https://charts.openobserve.ai
+      chart: openobserve-standalone
+      targetRevision: 1.0.1
+      helm:
+        releaseName: openobserve
+        valueFiles:
+          - $values/platform/observability/openobserve/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 Secret 与 Traefik IngressRoute)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/observability/openobserve
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

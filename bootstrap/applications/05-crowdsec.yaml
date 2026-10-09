@@ -9,10 +9,23 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/security/crowdsec
+  sources:
+    # 1. 官方 CrowdSec Helm Chart 仓库
+    - repoURL: https://crowdsecurity.github.io/helm-charts
+      chart: crowdsec
+      targetRevision: 0.24.2
+      helm:
+        releaseName: crowdsec
+        valueFiles:
+          - $values/platform/security/crowdsec/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 Secret 与 Traefik Bouncer 中间件)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/security/crowdsec
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: security

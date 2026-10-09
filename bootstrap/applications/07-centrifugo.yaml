@@ -4,15 +4,28 @@ metadata:
   name: 07-centrifugo
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/messaging/centrifugo
+  sources:
+    # 1. 官方 Centrifugo Helm Chart 仓库
+    - repoURL: https://centrifugal.github.io/helm-charts
+      chart: centrifugo
+      targetRevision: 13.6.1
+      helm:
+        releaseName: centrifugo
+        valueFiles:
+          - $values/platform/messaging/centrifugo/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 Secret 与 Traefik IngressRoute)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/messaging/centrifugo
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: messaging

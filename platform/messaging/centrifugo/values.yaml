@@ -1,0 +1,119 @@
+# ==============================================================================
+# Centrifugo v6 官方 Helm Values (适用于 4C8G 单机 K3s)
+# ==============================================================================
+fullnameOverride: "centrifugo"
+
+image:
+  tag: "6.9.7"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 300m
+    memory: 128Mi
+
+priorityClassName: platform-standard
+
+envSecret:
+  - name: CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY
+    secretKeyRef:
+      name: centrifugo-secrets
+      key: token-hmac-secret-key
+  - name: CENTRIFUGO_HTTP_API_KEY
+    secretKeyRef:
+      name: centrifugo-secrets
+      key: api-key
+  - name: CENTRIFUGO_ADMIN_PASSWORD
+    secretKeyRef:
+      name: centrifugo-secrets
+      key: admin-password
+  - name: CENTRIFUGO_ADMIN_SECRET
+    secretKeyRef:
+      name: centrifugo-secrets
+      key: admin-secret
+  - name: REDIS_PASSWORD
+    secretKeyRef:
+      name: valkey-secret
+      key: password
+
+env:
+  CENTRIFUGO_ENGINE_TYPE: "redis"
+  CENTRIFUGO_ENGINE_REDIS_ADDRESS: "redis://:$(REDIS_PASSWORD)@valkey-primary.database.svc:6379/0"
+
+config:
+  websocket:
+    use_write_buffer_pool: true
+    message_size_limit: 65536
+  uni_websocket:
+    enabled: true
+  http_stream:
+    enabled: true
+  sse:
+    enabled: true
+  uni_sse:
+    enabled: true
+  engine:
+    type: redis
+    redis:
+      connect_timeout: "1s"
+      io_timeout: "4s"
+  client:
+    allow_anonymous_connect_without_token: false
+    ping_interval: "30s"
+    pong_timeout: "8s"
+    connection_limit: 10000
+    user_connection_limit: 10
+    queue_max_size: 1048576
+    stale_close_delay: "10s"
+  admin:
+    enabled: true
+    handler_prefix: "/admin"
+  health:
+    enabled: true
+  prometheus:
+    enabled: true
+  log:
+    level: info
+  channel:
+    history_meta_ttl: "720h"
+    namespaces:
+      - name: public
+        presence: true
+        join_leave: true
+        history_size: 100
+        history_ttl: "300s"
+        allow_recovery: true
+        force_recovery: true
+        allow_publish_for_subscriber: false
+        allow_subscribe_for_client: true
+        allow_subscribe_for_anonymous: false
+        allow_publish_for_anonymous: false
+      - name: private
+        presence: true
+        join_leave: true
+        history_size: 50
+        history_ttl: "300s"
+        allow_recovery: true
+        force_recovery: true
+        allow_publish_for_subscriber: false
+        allow_subscribe_for_client: false
+      - name: user
+        presence: false
+        join_leave: false
+        history_size: 50
+        history_ttl: "300s"
+        allow_recovery: true
+        force_recovery: true
+        allow_publish_for_subscriber: false
+        allow_subscribe_for_client: false
+      - name: notification
+        presence: false
+        join_leave: false
+        history_size: 10
+        history_ttl: "60s"
+        allow_recovery: false
+        force_recovery: false
+        allow_publish_for_subscriber: false
+        allow_subscribe_for_client: true

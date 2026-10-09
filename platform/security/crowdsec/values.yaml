@@ -1,0 +1,45 @@
+# ==============================================================================
+# CrowdSec 官方 Helm Values (适用于 4C8G 单机 K3s)
+# ==============================================================================
+fullnameOverride: "crowdsec"
+
+agent:
+  enabled: false
+
+appsec:
+  enabled: false
+
+lapi:
+  enabled: true
+  replicas: 1
+  priorityClassName: platform-standard
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  persistentVolume:
+    data:
+      enabled: true
+      storageClassName: "local-path"
+      size: 1Gi
+    config:
+      enabled: true
+      storageClassName: "local-path"
+      size: 100Mi
+  env:
+    - name: TZ
+      value: "Asia/Shanghai"
+    - name: USE_WAL
+      value: "true"
+    - name: COLLECTIONS
+      value: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/whitelist-good-actors crowdsecurity/base-http-scenarios crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
+    - name: APPSEC_CONFIGS
+      value: "crowdsecurity/appsec-default"
+    - name: BOUNCER_KEY_traefik
+      valueFrom:
+        secretKeyRef:
+          name: crowdsec-secrets
+          key: traefik-bouncer-key
