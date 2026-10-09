@@ -53,7 +53,7 @@ k3s-infra/
 │   ├── workflows/           # Asynqmon, Temporal 工作流与任务编排
 │   ├── media/imgproxy/      # Imgproxy 部署清单
 │   └── observability/       # Dozzle, OpenObserve, OpenTelemetry Collector 可观测套件
-├── docs/                    # 架构手册与运维实战指南 (GITOPS_GUIDE.md)
+├── README.md                # 生产级 GitOps 架构与运维实战手册
 ├── justfile                 # 项目核心工作流与运维任务运行器
 ├── lefthook.yml             # 本地 Git 提交/推送前自动化检查钩子
 ├── .mise.toml               # 统一工具链依赖与版本管理声明 (just, kubectl, helm, linters)
@@ -97,13 +97,14 @@ lefthook install
 | `just fmt` | 自动格式化所有 Shell 脚本 (`shfmt`) 与 Markdown 文档 (`rumdl fmt`)（别名：`fix`） |
 | `just render [app]` | 渲染指定应用的 Kustomize 最终清单至终端（默认应用：`bgin`，别名：`template`） |
 | `just import-image [IMG]` | 快速拉取或导入预构建镜像至 K3s containerd（默认：`jiaoio/postgres:18-trixie`） |
-| `just set-repo <URL>` | 全局批量替换 `bootstrap/*.yaml` 中的 GitOps 仓库远端地址 |
-| `just set-domain <DOMAIN>` | 全局批量替换所有 YAML 清单与文档中的根域名 |
+| `just domain <DOMAIN>` | 全局批量替换所有 YAML 清单与文档中的根域名（别名：`set-domain`） |
+| `just repo <URL>` | 全局批量替换 `bootstrap/*.yaml` 中的 GitOps 仓库远端地址（别名：`set-repo`） |
 | `just argocd` | 基于官方 Helm Chart 10.x 部署或就地升级 ArgoCD 到 v3.0+ 精简生产版 |
 | `just pass` | 快速获取 ArgoCD 初始 admin 登录密码并自动 base64 解密输出 |
 | `just ui` | 本地端口转发快速访问 ArgoCD 控制台（8080 端口） |
 | `just up` | 触发集群 GitOps 全量声明式接管（`kubectl apply -f bootstrap/root-app.yaml`，别名：`bootstrap`） |
 | `just ps` | 查看 ArgoCD 应用全量同步状态及集群内所有 Pod 运行健康度（别名：`status`） |
+| `just verify` | 深度核验集群内 13 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
 
 ---
 
