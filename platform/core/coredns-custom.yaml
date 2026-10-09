@@ -4,7 +4,7 @@ metadata:
   name: coredns-custom
   namespace: kube-system
 data:
-  # 覆盖默认服务器块中的本地解析规则（无缝替代原有 docker-infra/dnsmasq）
+  # 覆盖默认服务器块中的本地解析规则（确保集群内部直接回环解析本集群入口）
   hosts.override: |
     hosts {
         127.0.0.1 mso.lol
@@ -13,16 +13,6 @@ data:
         127.0.0.1 search.mso.lol
         127.0.0.1 s3.mso.lol
         127.0.0.1 gateway.mso.lol
+        127.0.0.1 argocd.mso.lol
         fallthrough
-    }
-  # 自定义 .local / .test 独立区域服务器块
-  custom-zones.server: |
-    local:53 test:53 orb.local:53 {
-        errors
-        cache 30
-        hosts {
-            127.0.0.1 gateway.local
-            127.0.0.1 proxy.orb.local
-            fallthrough
-        }
     }

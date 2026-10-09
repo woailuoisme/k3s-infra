@@ -92,15 +92,6 @@ certificatesResolvers:
         resolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"
-  letsencrypt:
-    acme:
-      email: admin@mso.lol
-      storage: /data/acme.json
-      dnsChallenge:
-        provider: cloudflare
-        resolvers:
-          - "1.1.1.1:53"
-          - "8.8.8.8:53"
 
 # 从 Secret 注入 Cloudflare API 凭证 (由 SOPS 加密生成)
 env:
