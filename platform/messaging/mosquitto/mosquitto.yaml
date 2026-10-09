@@ -109,6 +109,7 @@ spec:
         - name: auth
           secret:
             secretName: mosquitto-auth
+            defaultMode: 0600
   volumeClaimTemplates:
     - metadata:
         name: data
