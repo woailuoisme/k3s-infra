@@ -3,6 +3,5 @@ kind: Kustomization
 
 resources:
   - app-credentials.yaml
-  - init-configmap.yaml
   - s3-credentials.yaml
   - cluster.yaml

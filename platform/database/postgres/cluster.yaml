@@ -76,10 +76,9 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS pg_cron;
         - CREATE EXTENSION IF NOT EXISTS dblink;
         - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-      postInitApplicationSQLRefs:
-        configMapRefs:
-          - name: postgres-init-scripts
-            key: 02-iot-vending-schema.sql
+        - CREATE EXTENSION IF NOT EXISTS vector;
+        - CREATE EXTENSION IF NOT EXISTS postgis;
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
   # 原生 Barman S3 持续流式 WAL 归档与备份配置
   # 注：待镜像补齐 barman-cli-cloud 后取消下段注释即可无缝启用 Garage S3 备份
