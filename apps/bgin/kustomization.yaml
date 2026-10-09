@@ -14,4 +14,4 @@ resources:
 
 images:
   - name: ghcr.io/woailuoisme/gin-bun
-    newTag: v1.0.0
+    newTag: latest
