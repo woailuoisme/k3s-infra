@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 10-portainer
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # 1. 官方 Portainer Kubernetes Helm Chart 仓库
+    - repoURL: https://portainer.github.io/k8s/
+      chart: portainer
+      targetRevision: 245.2.0
+      helm:
+        releaseName: portainer
+        valueFiles:
+          - $values/platform/observability/portainer/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 SealedSecret 与 Traefik IngressRoute)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/observability/portainer
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

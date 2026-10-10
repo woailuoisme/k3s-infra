@@ -1,36 +1,23 @@
 pre-commit:
   parallel: true
-  jobs:
-    - name: gitleaks
-      run: gitleaks protect --staged --verbose
+  commands:
+    gitleaks:
+      run: gitleaks protect --staged
 
-    - name: validate helm & k8s
-      glob:
-        - "apps/**/*"
-        - "platform/**/*"
-        - "bootstrap/**/*"
-      run: just lint-helm && just lint-k8s
+    validate-k8s:
+      glob: "{apps,platform,bootstrap}/**/*.{yaml,yml}"
+      run: just validate
 
-    - name: shellcheck
-      glob:
-        - "**/*.sh"
-      run: shellcheck --severity=warning {staged_files}
-
-    - name: shfmt
-      glob:
-        - "**/*.sh"
-      run: shfmt -w {staged_files}
+    shell:
+      glob: "**/*.sh"
+      run: shfmt -w {staged_files} && shellcheck --severity=warning {staged_files}
       stage_fixed: true
 
-    - name: actionlint
-      glob:
-        - ".github/workflows/*.yml"
-        - ".github/workflows/*.yaml"
+    actionlint:
+      glob: ".github/workflows/*.{yml,yaml}"
       run: actionlint {staged_files}
 
-    - name: rumdl
-      glob:
-        - "**/*.md"
+    rumdl:
+      glob: "**/*.md"
       run: rumdl fmt {staged_files}
       stage_fixed: true
-

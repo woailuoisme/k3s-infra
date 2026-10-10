@@ -1,0 +1,52 @@
+# ==============================================================================
+# Portainer 官方 Helm Chart 生产精简配置 (4C8G 规格与 GitOps 深度适配)
+# Chart: portainer (v245.2.0) | App: v2.45.2 (CE 社区版)
+# ==============================================================================
+
+replicaCount: 1
+
+enterpriseEdition:
+  enabled: false
+
+image:
+  repository: portainer/portainer-ce
+  tag: 2.45.2
+  pullPolicy: IfNotPresent
+
+# 调度优先级与容灾配置 (4C8G 物理主机高压时优先让渡资源)
+priorityClassName: "observability-low"
+
+# 4C8G 严格资源防爆配额
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+# 集群本地管理权限声明 (启用 localMgmt 自动绑定 cluster-admin 供运维只读与诊断排错)
+localMgmt: true
+
+# 服务类型：通过 Traefik IngressRoute 统一暴露，内部设为 ClusterIP
+service:
+  type: ClusterIP
+  httpPort: 9000
+  httpsPort: 9443
+  edgePort: 8000
+
+# 持久化存储：绑定 K3s local-path，精简为 2Gi (满足内部 BoltDB 元数据存储，拒绝 10Gi 浪费)
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 2Gi
+  accessMode: ReadWriteOnce
+
+# 反向代理可信域名 (启用 CSRF Origin 校验)
+trusted_origins:
+  enabled: true
+  domains: "portainer.mso.lol"
+
+# 声明式初始管理员凭证注入 (绑定本地 SealedSecret，启动即锁定管理员账号)
+adminPassword:
+  existingSecret: "portainer-admin-password"

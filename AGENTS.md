@@ -187,7 +187,7 @@ Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
 Wave  3 : 05-authelia (SSO / 身份认证)
 Wave  4 : 06-meilisearch (搜索), 07-centrifugo (WebSocket 推送), 07-mosquitto (MQTT 代理)
-Wave  5 : 08-asynqmon, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector
+Wave  5 : 08-asynqmon, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector, 10-portainer
 Wave  6 : 20-bgin (自研业务后端负载)
 ```
 

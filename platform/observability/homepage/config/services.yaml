@@ -59,6 +59,12 @@
         icon: si-opentelemetry
         description: OpenTelemetry 遥测数据采集管道
 
+    - Portainer:
+        icon: portainer
+        href: https://portainer.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 云原生轻量级可视化与排错面板
+        ping: http://portainer.observability.svc:9000/api/system/status
+
 - 存储与数据库:
     - PostgreSQL:
         icon: postgresql
