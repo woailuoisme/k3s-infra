@@ -12,21 +12,16 @@ gitleaks = "latest" # 密钥与敏感信息静态扫描
 trivy = "latest" # 容器与 K8s 清单安全合规与错配扫描器
 lefthook = "latest" # 极速 Git Hooks 管理器
 
-# --- 数据与清单处理 ---
-yq = "latest" # 轻量高性能 YAML 命令行处理器
-dyff = "latest" # YAML/JSON 清单高可读性语义差异比对工具
-
 # --- 敏感机密声明式管理 ---
 kubeseal = "latest" # Bitnami Sealed Secrets 离线公钥加密 CLI
 
 # --- Kubernetes 核心与 GitOps 工具链 ---
 kubectl = "latest" # Kubernetes 官方命令行工具
 helm = "latest" # 云原生 Helm 包管理器
-kustomize = "latest" # 独立版 Kustomize 清单声明式打包工具
-argocd = "latest" # ArgoCD 官方 CLI 客户端
 kubeconform = "latest" # 高性能纯离线 K8s 清单 OpenAPI Schema 语法校验器
+"aqua:cloudnative-pg/cloudnative-pg/kubectl-cnpg" = "latest" # CloudNativePG 官方 CLI 插件 (备份/状态/主从)
 
-# --- 终端交互与故障排查 ---
+# --- 终端交互、资源审计与排错 ---
 k9s = "latest" # 全功能终端 Kubernetes 交互式 TUI
 stern = "latest" # 跨多 Pod 与命名空间日志正则聚合查看器
-kubecolor = "latest" # kubectl 终端彩色高亮输出增强
+kube-capacity = "latest" # 4C8G 规格 CPU/内存 Requests & Limits 水位审计工具

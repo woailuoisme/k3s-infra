@@ -145,13 +145,6 @@ config:
       conditions:
         - "[CONNECTED] == true"
 
-    - name: Temporal Workflow
-      group: Messaging
-      url: "tcp://temporal.workflows.svc:7233"
-      interval: 30s
-      conditions:
-        - "[CONNECTED] == true"
-
     - name: Asynqmon Web
       group: Messaging
       url: "http://asynqmon.workflows.svc:8080"

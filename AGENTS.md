@@ -22,7 +22,7 @@
   - **数据库与缓存**：CloudNativePG（PostgreSQL 18 生产集群，集成 Garage S3 Barman 物理全备），Valkey 8（高性能内存键值缓存与分布式锁）。
   - **安全与身份认证**：Authelia（单点登录 SSO / 二阶段验证 2FA / ForwardAuth 网关认证），CrowdSec（协同式 IPS/IDS 入侵防御系统）。
   - **搜索与实时通信**：Meilisearch（毫秒级全文本搜索引擎），Centrifugo（高并发 WebSocket 实时推送引擎），Mosquitto（轻量 MQTT 物联网消息代理）。
-  - **异步任务与业务编排**：Asynqmon（Redis 异步队列可视化面板），Temporal（分布式高容错工作流引擎）。
+  - **异步任务与队列监控**：Asynqmon（Redis 异步队列可视化监控面板）。
   - **多媒体处理**：Imgproxy（高性能动态图片即时缩放与格式转换）。
   - **全栈可观测性**：Dozzle（轻量容器实时日志流查看器），OpenObserve（日志、指标、链路追踪三合一轻量平台），OpenTelemetry Collector（全集群遥测指标采集与转发代理）。
   - **业务核心服务**：`apps/bgin`（Go/Gin 高性能 REST API + Asynq 异步后台队列消费者）。
@@ -50,7 +50,7 @@ k3s-infra/
 │   ├── security/            # Authelia, CrowdSec 安全与权限配置
 │   ├── search/meilisearch/  # Meilisearch 搜索引擎清单
 │   ├── messaging/           # Centrifugo, Mosquitto 消息中间件
-│   ├── workflows/           # Asynqmon, Temporal 工作流与任务编排
+│   ├── workflows/           # Asynqmon 异步任务队列监控面板
 │   ├── media/imgproxy/      # Imgproxy 部署清单
 │   └── observability/       # Dozzle, OpenObserve, OpenTelemetry Collector 可观测套件
 ├── README.md                # 生产级 GitOps 架构与运维实战手册
@@ -79,14 +79,17 @@ lefthook install
 
 - `just`：自动化任务运行器（对应根目录 [`justfile`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/justfile)）。
 - `kubectl` 与 `helm`：Kubernetes 集群交互与 Helm 包管理器。
+- `kubeseal`：Bitnami Sealed Secrets 离线公钥加密 CLI。
+- `kubectl-cnpg`：CloudNativePG 官方 CLI 插件（数据库状态、物理全备与主从切换运维）。
 - `yamllint`：YAML 文件静态语法与缩进格式校验。
 - `kubeconform`：纯离线高性能 Kubernetes 清单 OpenAPI 模式校验器。
 - `trivy`：Kubernetes 清单与配置安全合规与提权风险扫描器。
-- `dyff`：专为 YAML/JSON 清单设计的高可读性结构化语义差异比对工具。
-- `kubecolor`：kubectl 终端状态彩色高亮输出增强器。
+- `gitleaks`：密钥与敏感信息静态防泄漏扫描器。
 - `shellcheck` 与 `shfmt`：Shell 脚本语法检查与格式化工具。
 - `actionlint`：GitHub Actions Workflow 语法校验器。
 - `rumdl`：Markdown 规范校验与代码格式化工具。
+- `kube-capacity`：4C8G 规格 CPU 与内存 Requests & Limits 资源预占水位审计工具。
+- `k9s` 与 `stern`：终端 Kubernetes 交互式 TUI 与跨 Pod 正则日志聚合流查看器。
 
 ---
 
@@ -96,8 +99,9 @@ lefthook install
 
 | 命令 | 用途说明 |
 | :--- | :--- |
-| `just check` | 运行全量静态检测门禁（别名：`validate`, `lint`） |
+| `just check` | 运行全量静态检测门禁（YAML, Kustomize, Schema, Helm, Gitleaks）（别名：`validate`, `lint`） |
 | `just audit` | 运行 Trivy 对全仓 Kubernetes 清单进行安全合规与风险检测（别名：`sec`） |
+| `just capacity` | 查看全集群 CPU 与内存 Requests/Limits 预占水位（别名：`cap`） |
 | `just fmt` | 自动格式化所有 Shell 脚本 (`shfmt`) 与 Markdown 文档 (`rumdl fmt`)（别名：`fix`） |
 | `just render [app]` | 渲染指定应用的 Kustomize 最终清单至终端（默认应用：`bgin`，别名：`template`） |
 | `just import-image [IMG]` | 快速拉取或导入预构建镜像至 K3s containerd（默认：`jiaoio/postgres:18-trixie`） |
@@ -183,7 +187,7 @@ Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
 Wave  3 : 05-authelia (SSO / 身份认证)
 Wave  4 : 06-meilisearch (搜索), 07-centrifugo (WebSocket 推送), 07-mosquitto (MQTT 代理)
-Wave  5 : 08-asynqmon, 08-temporal, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector
+Wave  5 : 08-asynqmon, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector
 Wave  6 : 20-bgin (自研业务后端负载)
 ```
 
@@ -197,7 +201,7 @@ Wave  6 : 20-bgin (自研业务后端负载)
 - `resources.limits`：防止内存泄漏击穿节点的上限硬限制。
 - `priorityClassName`：
   - `edge-critical`：核心基础设施与数据持久层（Traefik、Mosquitto、PostgreSQL、ArgoCD）。
-  - `platform-standard`：通用业务与平台中间件（Valkey、Centrifugo、Temporal、bgin、Garage S3、CrowdSec、Authelia）。
+  - `platform-standard`：通用业务与平台中间件（Valkey、Centrifugo、bgin、Garage S3、CrowdSec、Authelia）。
   - `observability-low`：可观测性与辅助运维组件（Beszel、Dozzle、Gatus、Homepage、OpenObserve、OTel Collector）。
   - *(未显式声明的临时 Pod 默认落入最低 0 级，在内存受压时最优先被抢占让渡)*
 

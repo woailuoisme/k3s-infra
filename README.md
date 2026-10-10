@@ -71,12 +71,12 @@ just pass
 | **Wave 2** | `03-postgres-cluster`, `05-crowdsec` | `database`, `security` | 576M / 1280M | PostgreSQL 生产集群 (S3 备份)、入侵防御 |
 | **Wave 3** | `05-authelia` | `security` | 64M / 128M | 统一身份验证与 2FA ForwardAuth |
 | **Wave 4** | `06-meilisearch`, `07-centrifugo`, `07-mosquitto` | `search`, `messaging` | 352M / 768M | 全文搜索、实时 WebSocket 广播、MQTT Broker |
-| **Wave 5** | `08-asynqmon`, `08-temporal`, `09-imgproxy`, `10-beszel/gatus/homepage/dozzle/openobserve` | `workflows`, `media`, `observability` | 600M / 1600M | 异步监控、工作流、图片处理、主机监控、健康探测、应用导航、日志追踪 |
+| **Wave 5** | `08-asynqmon`, `09-imgproxy`, `10-beszel/gatus/homepage/dozzle/openobserve` | `workflows`, `media`, `observability` | 472M / 1216M | 异步队列监控、图片处理、主机监控、健康探测、应用导航、日志追踪 |
 | **Wave 6** | `20-bgin` | `apps` | 128M / 512M | 自研业务微服务 (Gin API + Worker) |
 
-- **总基础基线 (Requests)**：约 **2.2 GB**
-- **极限上限 (Limits)**：约 **5.6 GB**
-- **系统与 K3s 预留**：约 **2.4 GB**
+- **总基础基线 (Requests)**：约 **2.1 GB**
+- **极限上限 (Limits)**：约 **5.2 GB**
+- **系统与 K3s 预留**：约 **2.8 GB**
 
 ---
 
@@ -86,8 +86,9 @@ just pass
 
 | 指令 | 说明 |
 | :--- | :--- |
-| `just check` | 运行全量静态检测门禁（YAML, Helm, Kustomize, Gitleaks）（别名：`validate`, `lint`） |
+| `just check` | 运行全量静态检测门禁（YAML, Kustomize, Schema, Helm, Gitleaks）（别名：`validate`, `lint`） |
 | `just audit` | 运行 Trivy 对全仓 Kubernetes 清单进行安全合规与风险检测（别名：`sec`） |
+| `just capacity` | 查看全集群 CPU 与内存 Requests/Limits 预占水位（别名：`cap`） |
 | `just fmt` | 自动格式化 Shell 脚本与 Markdown 文档（别名：`fix`） |
 | `just up` | 引导启动或同步 ArgoCD 根应用 (App-of-Apps)（别名：`bootstrap`） |
 | `just ps` | 查看全集群 Pod 运行健康度与 ArgoCD 应用同步状态（别名：`status`） |

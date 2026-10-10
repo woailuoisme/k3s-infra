@@ -88,12 +88,6 @@
         description: MQTT 物联网消息 Broker
         ping: tcp://mosquitto.messaging.svc:1883
 
-    - Temporal:
-        icon: si-temporal
-        href: https://workflow.{{HOMEPAGE_VAR_SITE_ADDRESS}}
-        description: 分布式持久化工作流调度引擎
-        ping: tcp://temporal.workflows.svc:7233
-
     - Asynqmon:
         icon: mdi-tray-full
         href: https://queue.{{HOMEPAGE_VAR_SITE_ADDRESS}}

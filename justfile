@@ -8,8 +8,8 @@ default:
 # 1. 质量门禁与代码格式化 (Local Linters & Formatters)
 # ------------------------------------------------------------------------------
 
-# 运行全量静态检测门禁 (YAML, Kustomize, Helm, Gitleaks)
-check: _lint-k8s _lint-kustomize _lint-helm _lint-secrets
+# 运行全量静态检测门禁 (YAML, Kustomize, Schema, Helm, Gitleaks)
+check: _lint-k8s _lint-kustomize _lint-schema _lint-helm _lint-secrets
 validate: check
 lint: check
 
@@ -53,6 +53,11 @@ status: ps
 health:
     @./scripts/cluster.sh health
 doctor: health
+
+# 集群资源预占与水位巡检 (kube-capacity: 4C8G CPU/Memory Requests & Limits)
+capacity:
+    @kube-capacity --pods --util
+cap: capacity
 
 # 滚动重启指定应用 (例如: just restart bgin-api [namespace])
 restart app ns="":
@@ -129,6 +134,11 @@ _lint-kustomize:
         kubectl kustomize "$dir" > /dev/null || exit 1; \
     done
 
+_lint-schema:
+    @find . -name "kustomization.yaml" -exec dirname {} \; | sort | while read -r dir; do \
+        kubectl kustomize "$dir" | kubeconform -summary -ignore-missing-schemas -insecure-skip-tls-verify > /dev/null || exit 1; \
+    done
+
 _lint-helm:
     @if find apps platform -name "Chart.yaml" -maxdepth 3 2>/dev/null | grep -q .; then \
         find apps platform -name "Chart.yaml" -exec dirname {} \; | while read -r chart; do \
@@ -149,3 +159,4 @@ _fmt-md:
 
 lint-helm: _lint-helm
 lint-k8s: _lint-k8s
+lint-schema: _lint-schema
