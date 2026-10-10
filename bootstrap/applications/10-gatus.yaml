@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 10-gatus
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    # 1. 官方 Gatus Helm Chart 仓库
+    - repoURL: https://twin.github.io/helm-charts
+      chart: gatus
+      targetRevision: 1.5.0
+      helm:
+        releaseName: gatus
+        valueFiles:
+          - $values/platform/observability/gatus/values.yaml
+    # 2. 本 GitOps 仓库 (提供本地 IngressRoute)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/observability/gatus
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

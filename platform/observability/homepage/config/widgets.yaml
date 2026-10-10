@@ -1,0 +1,38 @@
+---
+# Homepage 顶部信息与小组件配置
+# 文档: https://gethomepage.dev/configs/widgets/
+
+- greeting:
+    text_size: 2xl
+    text: "欢迎回来"
+
+- search:
+    provider: duckduckgo
+    target: _blank
+    focus: false
+    showSearchSuggestions: true
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: long
+      hourCycle: h24
+    locale: zh-CN
+
+- kubernetes:
+    cluster:
+      show: true
+      cpu: true
+      memory: true
+      showNodes: true
+
+- openmeteo:
+    label: Dongguan
+    latitude: 23.018
+    longitude: 113.7487
+    timezone: Asia/Shanghai
+    units: metric
+    cache: 30
+    format:
+      maximumFractionDigits: 1

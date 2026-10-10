@@ -84,6 +84,7 @@ cmd_verify() {
 		"media:imgproxy-secrets"
 		"messaging:centrifugo-secrets"
 		"messaging:valkey-secret"
+		"observability:beszel-agent-secret"
 		"observability:openobserve-secrets"
 		"search:meilisearch-master-key"
 		"security:authelia-secret"

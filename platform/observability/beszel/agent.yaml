@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: beszel-agent
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: beszel-agent
+    app.kubernetes.io/part-of: platform
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: beszel-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: beszel-agent
+    spec:
+      hostNetwork: true
+      hostPID: true
+      priorityClassName: observability-low
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+        - key: CriticalAddonsOnly
+          operator: Exists
+      containers:
+        - name: beszel-agent
+          image: henrygd/beszel-agent:0.21.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORT
+              value: "45876"
+            - name: HUB_URL
+              value: "http://beszel.observability.svc.cluster.local:8090"
+            - name: KEY
+              valueFrom:
+                secretKeyRef:
+                  name: beszel-agent-secret
+                  key: key
+                  optional: true
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: beszel-agent-secret
+                  key: token
+                  optional: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 24Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: containerd-sock
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: proc
+              mountPath: /proc
+              readOnly: true
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+      volumes:
+        - name: containerd-sock
+          hostPath:
+            path: /run/k3s/containerd/containerd.sock
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys

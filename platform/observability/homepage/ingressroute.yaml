@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: homepage
+  namespace: observability
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`home.mso.lol`) || Host(`homepage.mso.lol`)
+      kind: Rule
+      middlewares:
+        - name: chain-auth
+          namespace: traefik
+      services:
+        - name: homepage
+          port: 3000
+  tls:
+    certResolver: cloudflare

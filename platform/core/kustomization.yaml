@@ -5,4 +5,6 @@ resources:
   - priority-classes.yaml
   - namespaces.yaml
   - limit-range.yaml
+  - resource-quotas.yaml
+  - network-policy.yaml
   - coredns-custom.yaml

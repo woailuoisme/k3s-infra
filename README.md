@@ -71,12 +71,12 @@ just pass
 | **Wave 2** | `03-postgres-cluster`, `05-crowdsec` | `database`, `security` | 576M / 1280M | PostgreSQL 生产集群 (S3 备份)、入侵防御 |
 | **Wave 3** | `05-authelia` | `security` | 64M / 128M | 统一身份验证与 2FA ForwardAuth |
 | **Wave 4** | `06-meilisearch`, `07-centrifugo`, `07-mosquitto` | `search`, `messaging` | 352M / 768M | 全文搜索、实时 WebSocket 广播、MQTT Broker |
-| **Wave 5** | `08-asynqmon`, `08-temporal`, `09-imgproxy`, `10-可观测套件` | `workflows`, `media`, `observability` | 448M / 1152M | 异步监控、工作流、图片处理、OpenObserve |
+| **Wave 5** | `08-asynqmon`, `08-temporal`, `09-imgproxy`, `10-beszel/gatus/homepage/dozzle/openobserve` | `workflows`, `media`, `observability` | 600M / 1600M | 异步监控、工作流、图片处理、主机监控、健康探测、应用导航、日志追踪 |
 | **Wave 6** | `20-bgin` | `apps` | 128M / 512M | 自研业务微服务 (Gin API + Worker) |
 
-- **总基础基线 (Requests)**：约 **2.0 GB**
-- **极限上限 (Limits)**：约 **5.1 GB**
-- **系统与 K3s 预留**：约 **2.9 GB**
+- **总基础基线 (Requests)**：约 **2.2 GB**
+- **极限上限 (Limits)**：约 **5.6 GB**
+- **系统与 K3s 预留**：约 **2.4 GB**
 
 ---
 
@@ -93,7 +93,7 @@ just pass
 | `just ps` | 查看全集群 Pod 运行健康度与 ArgoCD 应用同步状态（别名：`status`） |
 | `just sync [app]` | 强制刷新并触发 ArgoCD 应用同步（默认全量，支持 `just sync bgin`）（别名：`refresh`） |
 | `just init-key [KEY]` | 注入 Sealed Secrets 离线主私钥并触发自愈解密（别名：`init-secrets`） |
-| `just verify` | 检查集群内 13 个 Sealed Secrets 的解密与 Secret 映射状态（别名：`verify-secrets`） |
+| `just verify` | 检查集群内 14 个 Sealed Secrets 的解密与 Secret 映射状态（别名：`verify-secrets`） |
 | `just seal <src> <dst>` | 使用离线公钥加密明文 Secret 并生成入库清单 |
 | `just ui` | 端口转发访问本地 ArgoCD 控制台 (`localhost:8080`) |
 | `just domain <DOMAIN>` | 全局批量替换所有清单与文档中的主域名（别名：`set-domain`） |

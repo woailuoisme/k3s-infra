@@ -1,0 +1,193 @@
+# ==============================================================================
+# Gatus 官方 Helm Chart Values (轻量自动化服务健康状态页，4C8G 调优)
+# 官方 Chart: https://twin.github.io/helm-charts (twin/gatus)
+# ==============================================================================
+fullnameOverride: "gatus"
+
+image:
+  repository: twinproduction/gatus
+  tag: "v5.34.0"
+  pullPolicy: IfNotPresent
+
+priorityClassName: observability-low
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 96Mi
+
+deployment:
+  annotateConfigChecksum: true
+  strategy: RollingUpdate
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 500Mi
+  storageClassName: "local-path"
+  mountPath: /data
+
+# ------------------------------------------------------------------------------
+# Gatus 核心健康检查与状态页配置
+# ------------------------------------------------------------------------------
+config:
+  web:
+    port: 8080
+
+  ui:
+    title: "基础设施服务状态 | Cloud-Native Status"
+    description: "K3s 云原生微服务与基础设施实时健康监控看板"
+    header: "K3s 集群服务运行状态看板"
+    default-sort: "group"
+
+  storage:
+    type: sqlite
+    path: /data/data.db
+
+  metrics: true
+
+  endpoints:
+    # --- 边缘网关与安全防护 (Gateways & Security) ---
+    - name: Traefik Ingress Gateway
+      group: Gateways
+      url: "tcp://traefik.traefik.svc:80"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Authelia SSO
+      group: Security
+      url: "http://authelia.security.svc:9091/api/health"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: CrowdSec Engine
+      group: Security
+      url: "tcp://crowdsec-service.security.svc:8080"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    # --- 统一可观测性与运维 (Observability) ---
+    - name: OpenObserve
+      group: Observability
+      url: "http://openobserve.observability.svc:5080/healthz"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: Dozzle Logs
+      group: Observability
+      url: "http://dozzle.observability.svc:8080/healthcheck"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: Beszel Hub
+      group: Observability
+      url: "http://beszel.observability.svc:8090/api/health"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: Homepage Dashboard
+      group: Observability
+      url: "http://homepage.observability.svc:3000"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    # --- 核心持久化与数据库 (Databases & Storage) ---
+    - name: PostgreSQL CNPG
+      group: Databases
+      url: "tcp://postgres-cluster-rw.database.svc:5432"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Valkey Cache
+      group: Databases
+      url: "tcp://valkey-primary.database.svc:6379"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Garage S3 Storage
+      group: Databases
+      url: "tcp://garage.storage.svc:3900"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    # --- 实时通信与任务调度 (Messaging & Workflows) ---
+    - name: Centrifugo Realtime
+      group: Messaging
+      url: "http://centrifugo.messaging.svc:8000/health"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: Mosquitto MQTT
+      group: Messaging
+      url: "tcp://mosquitto.messaging.svc:1883"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Temporal Workflow
+      group: Messaging
+      url: "tcp://temporal.workflows.svc:7233"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Asynqmon Web
+      group: Messaging
+      url: "http://asynqmon.workflows.svc:8080"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    # --- 全文检索与媒体处理 (Search & Media) ---
+    - name: Meilisearch
+      group: Search
+      url: "http://meilisearch.search.svc:7700/health"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    - name: imgproxy
+      group: Search
+      url: "http://imgproxy.media.svc:8080/healthz"
+      interval: 30s
+      conditions:
+        - "[STATUS] == 200"
+
+    # --- 业务服务与外部网络 (Apps & Network) ---
+    - name: Bgin API
+      group: Apps
+      url: "tcp://bgin-api.apps.svc:3300"
+      interval: 30s
+      conditions:
+        - "[CONNECTED] == true"
+
+    - name: Core DNS (Cloudflare)
+      group: Network
+      url: "1.1.1.1"
+      dns:
+        query-name: "cloudflare.com"
+        query-type: "A"
+      interval: 60s
+      conditions:
+        - "[DNS_RCODE] == NOERROR"

@@ -1,0 +1,121 @@
+---
+# yaml-language-server: $schema=none
+# ==============================================================================
+# Homepage 服务目录与导航卡片配置 (K3s 云原生适配版)
+# ==============================================================================
+
+- 网关与安全:
+    - Traefik:
+        icon: traefik
+        href: https://gateway.{{HOMEPAGE_VAR_SITE_ADDRESS}}/dashboard/
+        description: Traefik v3 云原生边缘网关
+        ping: http://traefik.traefik.svc:80
+
+    - Authelia:
+        icon: authelia
+        href: https://auth.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: SSO 单点登录与 2FA 认证门户
+        ping: http://authelia.security.svc:9091/api/health
+
+    - CrowdSec:
+        icon: crowdsec
+        description: 行为分析与入侵防御 WAF 引擎
+        ping: tcp://crowdsec-service.security.svc:8080
+
+- 统一观测与运维:
+    - Homepage:
+        icon: homepage
+        href: https://home.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 统一运维服务导航面板
+        ping: http://homepage.observability.svc:3000
+
+    - Gatus:
+        icon: gatus
+        href: https://status.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 自动化服务健康与状态监控
+        widget:
+          type: gatus
+          url: http://gatus.observability.svc:8080
+
+    - Beszel:
+        icon: beszel
+        href: https://beszel.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 服务器硬件与容器指标监控
+        ping: http://beszel.observability.svc:8090/api/health
+
+    - Dozzle:
+        icon: dozzle
+        href: https://logs.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 容器与 Pod 日志实时流式查看器
+        ping: http://dozzle.observability.svc:8080/healthcheck
+
+    - OpenObserve:
+        icon: sh-openobserve
+        href: https://observe.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 云原生日志、指标与链路追踪平台
+        ping: http://openobserve.observability.svc:5080/healthz
+
+    - OTel Collector:
+        icon: si-opentelemetry
+        description: OpenTelemetry 遥测数据采集管道
+
+- 存储与数据库:
+    - PostgreSQL:
+        icon: postgresql
+        description: CloudNativePG 18 HA 核心数据库
+        ping: tcp://postgres-cluster-rw.database.svc:5432
+
+    - Valkey:
+        icon: redis
+        description: Valkey 8.0 高性能内存缓存与分布式锁
+        ping: tcp://valkey-primary.database.svc:6379
+
+    - Garage S3:
+        icon: garage
+        href: https://storage-ui.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 分布式轻量 S3 对象存储控制台
+        ping: tcp://garage.storage.svc:3900
+
+- 通信与工作流:
+    - Centrifugo:
+        icon: mdi-broadcast
+        href: https://realtime.{{HOMEPAGE_VAR_SITE_ADDRESS}}/admin
+        description: 实时 WebSocket / SSE 广播引擎
+        ping: http://centrifugo.messaging.svc:8000/health
+
+    - Mosquitto:
+        icon: sh-mosquitto
+        description: MQTT 物联网消息 Broker
+        ping: tcp://mosquitto.messaging.svc:1883
+
+    - Temporal:
+        icon: si-temporal
+        href: https://workflow.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 分布式持久化工作流调度引擎
+        ping: tcp://temporal.workflows.svc:7233
+
+    - Asynqmon:
+        icon: mdi-tray-full
+        href: https://queue.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: Asynq 异步任务队列 Web 监控看板
+        ping: http://asynqmon.workflows.svc:8080
+
+- 检索与处理:
+    - Meilisearch:
+        icon: meilisearch
+        href: https://search.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 高性能轻量全文搜索引擎
+        ping: http://meilisearch.search.svc:7700/health
+
+    - imgproxy:
+        icon: mdi-image-auto-adjust
+        href: https://img.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 安全动态图片缩放与裁剪渲染
+        ping: http://imgproxy.media.svc:8080/healthz
+
+- 业务服务:
+    - bgin-api:
+        icon: golang
+        href: https://api.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 核心业务 REST API 服务
+        ping: tcp://bgin-api.apps.svc:3300

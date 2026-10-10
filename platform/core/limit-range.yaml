@@ -7,13 +7,34 @@ apiVersion: v1
 kind: LimitRange
 metadata:
   name: default-limit-range
-  namespace: apps
+  namespace: traefik
 spec:
   limits:
     - type: Container
       default:
-        cpu: 300m
+        cpu: 500m
         memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: 2000m
+        memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 32Mi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limit-range
+  namespace: storage
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 384Mi
       defaultRequest:
         cpu: 50m
         memory: 64Mi
@@ -22,7 +43,7 @@ spec:
         memory: 1024Mi
       min:
         cpu: 10m
-        memory: 16Mi
+        memory: 32Mi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -62,6 +83,51 @@ spec:
       max:
         cpu: 1000m
         memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limit-range
+  namespace: search
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 384Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: 1500m
+        memory: 1024Mi
+      min:
+        cpu: 10m
+        memory: 32Mi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limit-range
+  namespace: apps
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 300m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: 1500m
+        memory: 1024Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -80,6 +146,9 @@ spec:
       max:
         cpu: 1000m
         memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -98,6 +167,9 @@ spec:
       max:
         cpu: 1000m
         memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -116,6 +188,9 @@ spec:
       max:
         cpu: 1500m
         memory: 512Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
 ---
 apiVersion: v1
 kind: LimitRange
@@ -134,3 +209,6 @@ spec:
       max:
         cpu: 1500m
         memory: 1024Mi
+      min:
+        cpu: 10m
+        memory: 16Mi

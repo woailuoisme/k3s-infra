@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gatus
+  namespace: observability
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`status.mso.lol`)
+      kind: Rule
+      middlewares:
+        - name: chain-basic
+          namespace: traefik
+      services:
+        - name: gatus
+          port: 8080
+  tls:
+    certResolver: cloudflare

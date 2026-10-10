@@ -108,7 +108,7 @@ lefthook install
 | `just ui` | 本地端口转发快速访问 ArgoCD 控制台（8080 端口） |
 | `just up` | 触发集群 GitOps 全量声明式接管（`kubectl apply -f bootstrap/root-app.yaml`，别名：`bootstrap`） |
 | `just ps` | 查看 ArgoCD 应用全量同步状态及集群内所有 Pod 运行健康度（别名：`status`） |
-| `just verify` | 深度核验集群内 13 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
+| `just verify` | 深度核验集群内 14 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
 
 ---
 
@@ -183,7 +183,7 @@ Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
 Wave  3 : 05-authelia (SSO / 身份认证)
 Wave  4 : 06-meilisearch (搜索), 07-centrifugo (WebSocket 推送), 07-mosquitto (MQTT 代理)
-Wave  5 : 08-asynqmon, 08-temporal, 09-imgproxy, 10-dozzle, 10-openobserve, 10-otel-collector
+Wave  5 : 08-asynqmon, 08-temporal, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector
 Wave  6 : 20-bgin (自研业务后端负载)
 ```
 
@@ -196,9 +196,10 @@ Wave  6 : 20-bgin (自研业务后端负载)
 - `resources.requests`：服务正常运行所需的最低内存与 CPU 资源。
 - `resources.limits`：防止内存泄漏击穿节点的上限硬限制。
 - `priorityClassName`：
-  - `system-critical`：存储（Garage S3）、核心数据库（PostgreSQL、Valkey）。
-  - `platform-core`：入口网关（Traefik）、安全组件（Authelia、CrowdSec）。
-  - `workload-standard`：业务应用（`bgin`）及各类可观测性套件。
+  - `edge-critical`：核心基础设施与数据持久层（Traefik、Mosquitto、PostgreSQL、ArgoCD）。
+  - `platform-standard`：通用业务与平台中间件（Valkey、Centrifugo、Temporal、bgin、Garage S3、CrowdSec、Authelia）。
+  - `observability-low`：可观测性与辅助运维组件（Beszel、Dozzle、Gatus、Homepage、OpenObserve、OTel Collector）。
+  - *(未显式声明的临时 Pod 默认落入最低 0 级，在内存受压时最优先被抢占让渡)*
 
 ### 6.5 密钥安全与敏感数据治理
 

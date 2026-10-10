@@ -1,0 +1,62 @@
+---
+# Homepage 全局设置配置
+# 文档: https://gethomepage.dev/configs/settings/
+
+title: "K3s 基础设施与服务导航"
+description: "云原生容器服务与运维管理中枢"
+favicon: https://cdn.jsdelivr.net/gh/selfhst/icons/webp/homepage.webp
+
+theme: dark
+color: zinc
+language: zh-CN
+cardBlur: sm
+
+iconStyle: theme
+headerStyle: boxedWidgets
+hideVersion: true
+
+target: _blank
+
+showStats: true
+statusStyle: "dot"
+hideErrors: true
+
+useEqualHeights: true
+maxGroupColumns: 4
+
+layout:
+  网关与安全:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-shield-lock-outline
+
+  统一观测与运维:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-chart-timeline-variant-shimmer
+
+  存储与数据库:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-database-outline
+
+  通信与工作流:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-message-processing-outline
+
+  检索与处理:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-magnify-scan
+
+  业务服务:
+    style: row
+    columns: 4
+    useEqualHeights: true
+    icon: mdi-application-brackets-outline

@@ -1,0 +1,36 @@
+---
+# Homepage 书签导航配置
+# 文档: https://gethomepage.dev/configs/bookmarks/
+
+- 云原生与网关:
+    - Traefik:
+        - abbr: TF
+          href: https://doc.traefik.io/traefik/
+    - K3s:
+        - abbr: K3
+          href: https://docs.k3s.io/
+    - Authelia:
+        - abbr: AU
+          href: https://www.authelia.com/overview/prologue/introduction/
+
+- 数据与可观测性:
+    - PostgreSQL:
+        - abbr: PG
+          href: https://www.postgresql.org/docs/
+    - OpenObserve:
+        - abbr: OO
+          href: https://openobserve.ai/docs/
+    - Gatus:
+        - abbr: GT
+          href: https://gatus.io/
+    - Beszel:
+        - abbr: BZ
+          href: https://beszel.dev/
+
+- 开发者平台:
+    - GitHub:
+        - abbr: GH
+          href: https://github.com/
+    - Docker Hub:
+        - abbr: DH
+          href: https://hub.docker.com/

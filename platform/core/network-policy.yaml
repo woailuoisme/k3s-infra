@@ -1,0 +1,70 @@
+# ==============================================================================
+# 核心数据持久层聚焦防护 (Database NetworkPolicy)
+# ==============================================================================
+# 保护 PostgreSQL (5432) 与 Valkey (6379)，杜绝其他无关命名空间或测试 Pod 任意嗅探与越权连接
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-access-control
+  namespace: database
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # 1. 允许 database 命名空间内部互访 (CNPG 实例间物理复制、HA 心跳、内部探测)
+    - from:
+        - podSelector: {}
+    # 2. 授权命名空间访问 PostgreSQL (5432)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: apps
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: workflows
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: security
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 5432
+    # 3. 授权命名空间访问 Valkey 内存缓存 (6379)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: apps
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: workflows
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: security
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: messaging
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 6379
+    # 4. 允许 CNPG Operator 控制器及可观测性 Prometheus/OTel 采集监控指标 (9187 / 9121 / 8000)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 9187
+        - protocol: TCP
+          port: 9121
+        - protocol: TCP
+          port: 8000
