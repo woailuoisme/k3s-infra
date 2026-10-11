@@ -10,13 +10,23 @@ auth:
   existingSecretPasswordKey: password
 
 extraDeploy:
-  - apiVersion: v1
-    kind: Secret
+  - apiVersion: external-secrets.io/v1
+    kind: ExternalSecret
     metadata:
       name: valkey-secret
-    type: Opaque
-    stringData:
-      password: "redis_secret"
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: openbao-backend
+        kind: ClusterSecretStore
+      target:
+        name: valkey-secret
+        creationPolicy: Owner
+      data:
+        - secretKey: password
+          remoteRef:
+            key: messaging/valkey-secret
+            property: password
 
 primary:
   priorityClassName: "platform-standard"

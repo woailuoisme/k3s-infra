@@ -322,7 +322,10 @@ cmd_bao_sync() {
 			v="${v#"${v%%[![:space:]]*}"}"
 			v="${v%"${v##*[![:space:]]}"}"
 
-			if [[ "$v" =~ ^\"(.*)\"$ ]] || [[ "$v" =~ ^\'(.*)\'$ ]]; then
+			if [[ "$v" =~ ^\"(.*)\"$ ]]; then
+				v="${BASH_REMATCH[1]}"
+				v="$(printf '%b' "$v")"
+			elif [[ "$v" =~ ^\'(.*)\'$ ]]; then
 				v="${BASH_REMATCH[1]}"
 			fi
 

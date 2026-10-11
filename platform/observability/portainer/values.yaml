@@ -45,7 +45,7 @@ persistence:
 # 反向代理可信域名 (启用 CSRF Origin 校验)
 trusted_origins:
   enabled: true
-  domains: "portainer.mso.lol"
+  domains: "https://portainer.mso.lol"
 
 # 声明式初始管理员凭证注入 (绑定本地 ExternalSecret，启动即锁定管理员账号)
 adminPassword:

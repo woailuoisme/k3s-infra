@@ -66,6 +66,13 @@ config:
     password_file /mosquitto/auth/passwd
     acl_file /mosquitto/acl/acl
 
+extraEnvVars:
+  - name: MOSQUITTO_UNSAFE_ALLOW_SYMLINKS
+    value: "1"
+
+podSecurityContext:
+  fsGroup: 1883
+
 extraVolumes:
   - name: tmp
     emptyDir: {}

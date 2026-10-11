@@ -11,7 +11,7 @@ resources:
     memory: 48Mi
   limits:
     cpu: 100m
-    memory: 96Mi
+    memory: 128Mi
 
 certController:
   create: true
@@ -20,10 +20,10 @@ certController:
   resources:
     requests:
       cpu: 10m
-      memory: 24Mi
+      memory: 32Mi
     limits:
-      cpu: 50m
-      memory: 48Mi
+      cpu: 100m
+      memory: 96Mi
 
 webhook:
   create: true
@@ -34,8 +34,8 @@ webhook:
       cpu: 10m
       memory: 24Mi
     limits:
-      cpu: 50m
-      memory: 48Mi
+      cpu: 100m
+      memory: 64Mi
 
 # 开启 Vault Token 内存缓存，避免频繁向 OpenBao 发起认证请求
 vault:

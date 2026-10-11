@@ -32,7 +32,7 @@ spec:
             - name: PORT
               value: "3000"
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "home.mso.lol,homepage.mso.lol,localhost,127.0.0.1,*"
+              value: "*"
             - name: HOMEPAGE_VAR_SITE_ADDRESS
               value: "mso.lol"
             - name: HOMEPAGE_VAR_DOMAIN
@@ -56,6 +56,9 @@ spec:
             httpGet:
               path: /api/health
               port: 3000
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 5
@@ -63,6 +66,9 @@ spec:
             httpGet:
               path: /api/health
               port: 3000
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
