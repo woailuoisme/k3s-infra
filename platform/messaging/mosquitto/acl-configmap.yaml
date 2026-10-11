@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-acl
+  namespace: messaging
+data:
+  acl: |
+    # 超级管理员 (Admin) 完全读写权限
+    user admin
+    topic readwrite #
+    topic readwrite $SYS/#
+
+    # 租户与 IoT 设备模式化隔离 (Pattern ACL - 行业设备规范)
+    # %u = 客户端认证用户名 (Username)
+    # %c = 客户端唯一标识 (Client ID)
+    pattern readwrite %u/#
+    pattern readwrite device/%u/#
+    pattern readwrite devices/%c/#

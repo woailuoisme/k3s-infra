@@ -9,7 +9,7 @@
 本项目采用 **App-of-Apps** 模式，实现从底层系统、网关存储、数据库、安全鉴权到业务微服务的一键自动化编排与自愈。
 
 - **运行时**：K3s（禁用内置旧版 Traefik 与 ServiceLB，释放系统开销）
-- **GitOps 引擎**：ArgoCD v3.0+（官方 Helm Chart 10.x 最小化定制）
+- **GitOps 引擎**：ArgoCD v3.5+（官方 Helm Chart 10.10.2 最小化定制）
 - **密钥安全**：Bitnami Sealed Secrets（RSA 4096 离线公钥加密，0 插件依赖）
 - **边缘网关**：Traefik v3（自动化 Let's Encrypt 证书、WAF 限流中间件）
 - **数据持久层**：CloudNativePG (PostgreSQL 18 HA) + Garage S3 (NVMe 对象存储 / Barman 物理全备) + Valkey 8 (缓存)
@@ -19,41 +19,22 @@
 
 ## 快速开始
 
-### 1. 宿主机准备与 K3s 初始化
+如果是全新的一台新服务器/新集群，按顺序执行以下步骤即可完成全栈一键编排与自愈：
 
 ```bash
-# 1. 内核调优与 Swap 缓冲 (防止 4C8G 突发 OOM)
-sudo sysctl -w vm.swappiness=10
-sudo sysctl -w fs.inotify.max_user_watches=524288
-
-# 2. 极简启动 K3s (禁用旧版内置组件)
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
-  --disable traefik \
-  --disable servicelb \
-  --disable-cloud-controller \
-  --kubelet-arg='eviction-hard=memory.available<250Mi' \
-  --kubelet-arg='eviction-minimum-reclaim=memory.available=100Mi' \
-  --write-kubeconfig-mode 644" sh -
-```
-
-### 2. 注入 Sealed Secrets 离线主私钥 (仅新集群/灾备执行一次)
-
-新集群在启动控制器前需预先导入离线生成的 RSA 私钥（默认读取 `~/.config/sealed-secrets/master.key`）：
-
-```bash
+# 1. 注入 Sealed Secrets 离线私钥 (仅新集群/灾备需要，确保能解密 Git 中的密码)
 just init-key
-```
 
-### 3. 一键部署 ArgoCD 并引导根应用
-
-```bash
-# 1. 部署精简版 ArgoCD (Helm 10.x)
+# 2. 部署 ArgoCD 控制面到服务器 (官方 Helm Chart 10.10.2 精简版)
 just argocd
 
-# 2. 引导 App-of-Apps 根应用 (自动按 Sync Wave 梯度纳管全栈)
+# 3. 引导根应用，全量按 Sync Wave 波次部署全部组件与业务
 just up
 
-# 3. 获取 ArgoCD 初始登录密码
+# 4. (可选) 查看部署进度与所有应用健康状态
+just ps
+
+# 5. (可选) 获取 ArgoCD 初始 admin 登录密码
 just pass
 ```
 
@@ -94,7 +75,9 @@ just pass
 | `just ps` | 查看全集群 Pod 运行健康度与 ArgoCD 应用同步状态（别名：`status`） |
 | `just sync [app]` | 强制刷新并触发 ArgoCD 应用同步（默认全量，支持 `just sync bgin`）（别名：`refresh`） |
 | `just init-key [KEY]` | 注入 Sealed Secrets 离线主私钥并触发自愈解密（别名：`init-secrets`） |
-| `just verify` | 检查集群内 14 个 Sealed Secrets 的解密与 Secret 映射状态（别名：`verify-secrets`） |
+| `just verify` | 检查集群内 17 个 Sealed Secrets 的解密与 Secret 映射状态（别名：`verify-secrets`） |
+| `just view-secret [target] [key]` | 查看 Secret 明文（优先集群，断网自动回退至本地 master.key 离线解密，别名：`secret`） |
+| `just unseal [target] [key]` | 强制本地纯离线解密查看 Secret 明文（无需连接集群，别名：`decrypt`） |
 | `just seal <src> <dst>` | 使用离线公钥加密明文 Secret 并生成入库清单 |
 | `just ui` | 端口转发访问本地 ArgoCD 控制台 (`localhost:8080`) |
 | `just domain <DOMAIN>` | 全局批量替换所有清单与文档中的主域名（别名：`set-domain`） |
@@ -113,6 +96,41 @@ just pass
   ```bash
   just seal secret.tmp.yaml platform/gateway/traefik/sealed-secret.yaml
   ```
+
+- **查看解密原文 (集群在线 / 本地离线全支持)**：
+  Sealed Secrets 支持从 Kubernetes 集群实时调取解密 Secret，也支持在断网或未连集群时使用本地私钥直接离线解密：
+
+  - **一键查看 (推荐快捷指令)**：
+
+    ```bash
+    # 1. 列出全集群所有已注册 Secret 列表及序号 (共 17 个)
+    just view-secret
+
+    # 2. 智能自适应查看 (集群在线查集群，集群断网/未就绪自动回退到本地 master.key 解密)
+    just view-secret traefik
+    just view-secret 1
+
+    # 3. 强制本地纯离线解密查看 (无需连网或连接集群，秒级离线解密)
+    just unseal traefik
+    just unseal 1
+
+    # 4. 仅提取单个特定字段的纯明文字符串
+    just view-secret traefik CF_DNS_API_TOKEN
+    just unseal traefik CF_DNS_API_TOKEN
+    ```
+
+  - **原生 `kubectl` 查看**：
+
+    ```bash
+    # 1. 一键解码整个 Secret 的所有明文字段 (配合 jq)
+    kubectl get secret cloudflare-api-token -n traefik -o json | jq '.data | map_values(@base64d)'
+
+    # 2. 提取单个字段明文
+    kubectl get secret cloudflare-api-token -n traefik -o jsonpath='{.data.CF_DNS_API_TOKEN}' | base64 -d; echo
+    ```
+
+  - **终端可视化查看 (`k9s`)**：
+    运行 `k9s` → 输入 `:secret` 进入 Secret 列表 → 光标移动到目标 Secret 按键盘快捷键 **`x`**，即可直接高亮查看所有字段解码后的明文。
 
 ---
 

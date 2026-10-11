@@ -9,10 +9,23 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/observability/beszel
+  sources:
+    # 1. Beszel 官方 OCI Helm Chart (锁定 0.1.7 版本)
+    - repoURL: ghcr.io/henrygd/beszel-charts
+      chart: beszel-hub
+      targetRevision: 0.1.7
+      helm:
+        releaseName: beszel
+        valueFiles:
+          - $values/platform/observability/beszel/values.yaml
+    # 2. 本 GitOps 仓库 (提供 Agent DaemonSet, PVC, IngressRoute 与 SealedSecret)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/observability/beszel
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

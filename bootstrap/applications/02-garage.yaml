@@ -9,10 +9,23 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/storage/garage
+  sources:
+    # 1. Garage 社区 Helm Chart (Git 仓库源，锁定 garage-2.4.2 标签)
+    - repoURL: https://github.com/wittdennis/charts.git
+      targetRevision: garage-2.4.2
+      path: garage
+      helm:
+        releaseName: garage
+        valueFiles:
+          - $values/platform/storage/garage/values.yaml
+    # 2. 本 GitOps 仓库 (提供 WebUI, Traefik IngressRoute 与 SealedSecret)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/storage/garage
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: storage

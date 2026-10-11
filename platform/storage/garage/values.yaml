@@ -1,0 +1,83 @@
+# ------------------------------------------------------------------------------
+# Garage S3 Storage Helm Values (charts-derwitt-dev / wittdennis)
+# 针对单机 K3s (4C8G) 生产规格最小化精简配置
+# ------------------------------------------------------------------------------
+
+fullnameOverride: "garage"
+
+commonLabels:
+  app.kubernetes.io/name: garage
+  app.kubernetes.io/part-of: storage
+
+deployment:
+  kind: "StatefulSet"
+  replicaCount: 1
+  podManagementPolicy: "OrderedReady"
+
+image:
+  repository: "dxflrs/garage"
+  tag: "v2.4.1"
+  pullPolicy: "IfNotPresent"
+
+garage:
+  dbEngine: "lmdb"
+  blockSize: "1048576"
+  replicationFactor: "1"
+  consistencyMode: "consistent"
+  compressionLevel: "1"
+
+  rpc:
+    bindAddr: "[::]:3901"
+    secret:
+      create: false
+      name: "garage-secrets"
+
+  admin:
+    token:
+      create: false
+      secret:
+        create: false
+
+  s3:
+    api:
+      region: "garage"
+      rootDomain: ".s3.mso.lol"
+    web:
+      rootDomain: ".web.mso.lol"
+      index: "index.html"
+
+persistence:
+  enabled: true
+  meta:
+    size: "2Gi"
+    storageClass: "local-path"
+  data:
+    size: "10Gi"
+    storageClass: "local-path"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# 禁用 Chart 原生 Ingress 与 HTTPRoute (统一使用 Traefik IngressRoute)
+ingress:
+  s3:
+    api:
+      enabled: false
+    web:
+      enabled: false
+
+routes:
+  s3:
+    api:
+      enabled: false
+    web:
+      enabled: false
+
+monitoring:
+  metrics:
+    enabled: true

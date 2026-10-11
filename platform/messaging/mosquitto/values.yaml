@@ -1,0 +1,93 @@
+# ==============================================================================
+# Eclipse Mosquitto 官方加固 Helm Values (quench-mosquitto/mosquitto)
+# 针对 4C8G 单机 K3s 调优，0-CVE 无根容器，只读文件系统
+# ==============================================================================
+
+nameOverride: "mosquitto"
+
+replicaCount: 1
+
+updateStrategy:
+  type: Recreate
+
+priorityClassName: edge-critical
+
+resources:
+  requests:
+    cpu: 30m
+    memory: 32Mi
+  limits:
+    cpu: 300m
+    memory: 128Mi
+
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClass: "local-path"
+  accessModes:
+    - ReadWriteOnce
+
+service:
+  type: ClusterIP
+  ports:
+    mqtt: 1883
+    ws: 9001
+
+config:
+  conf: |
+    pid_file /tmp/mosquitto.pid
+
+    persistence true
+    persistence_location /mosquitto/data/
+    persistence_file mosquitto.db
+    autosave_interval 300
+    autosave_on_changes false
+    persistent_client_expiration 1d
+
+    max_packet_size 10485760
+    max_queued_messages 2000
+    max_inflight_messages 40
+    max_connections -1
+
+    log_dest stdout
+    log_type error
+    log_type warning
+    log_type notice
+    log_type information
+
+    listener 1883 0.0.0.0
+    protocol mqtt
+    set_tcp_nodelay true
+
+    listener 9001 0.0.0.0
+    protocol websockets
+
+    allow_anonymous false
+    password_file /mosquitto/auth/passwd
+    acl_file /mosquitto/acl/acl
+
+extraVolumes:
+  - name: tmp
+    emptyDir: {}
+  - name: auth
+    secret:
+      secretName: mosquitto-auth
+  - name: acl
+    configMap:
+      name: mosquitto-acl
+
+extraVolumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: auth
+    mountPath: /mosquitto/auth
+    readOnly: true
+  - name: acl
+    mountPath: /mosquitto/acl
+    readOnly: true
+
+networkPolicy:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false

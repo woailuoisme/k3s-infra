@@ -11,7 +11,7 @@
 ### 核心技术栈
 
 - **集群运行时**：K3s（禁用内置旧版 Traefik 与 ServiceLB，释放系统内存）。
-- **GitOps 引擎**：ArgoCD（v3.0+，基于官方 Helm Chart 10.x 最小化定制部署），实现以 Git 提交为单一真实源的持续交付。
+- **GitOps 引擎**：ArgoCD（v3.5+，基于官方 Helm Chart 10.10.2 最小化定制部署），实现以 Git 提交为单一真实源的持续交付。
 - **打包与清单管理**：
   - 上游平台中间件：ArgoCD 远端 Helm Chart（拒绝拷贝上游 Chart 导致代码仓库膨胀）。
   - 集群粘合剂与自研应用：原生 Kustomize（位于 `apps/` 目录及各类自定义 CRD 清单）。
@@ -107,12 +107,18 @@ lefthook install
 | `just import-image [IMG]` | 快速拉取或导入预构建镜像至 K3s containerd（默认：`jiaoio/postgres:18-trixie`） |
 | `just domain <DOMAIN>` | 全局批量替换所有 YAML 清单与文档中的根域名（别名：`set-domain`） |
 | `just repo <URL>` | 全局批量替换 `bootstrap/*.yaml` 中的 GitOps 仓库远端地址（别名：`set-repo`） |
-| `just argocd` | 基于官方 Helm Chart 10.x 部署或就地升级 ArgoCD 到 v3.0+ 精简生产版 |
+| `just argocd` | 基于官方 Helm Chart 10.10.2 部署或就地升级 ArgoCD 到 v3.5+ 精简生产版 |
 | `just pass` | 快速获取 ArgoCD 初始 admin 登录密码并自动 base64 解密输出 |
 | `just ui` | 本地端口转发快速访问 ArgoCD 控制台（8080 端口） |
 | `just up` | 触发集群 GitOps 全量声明式接管（`kubectl apply -f bootstrap/root-app.yaml`，别名：`bootstrap`） |
 | `just ps` | 查看 ArgoCD 应用全量同步状态及集群内所有 Pod 运行健康度（别名：`status`） |
-| `just verify` | 深度核验集群内 14 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
+| `just restart <app> [ns]` | 滚动重启指定应用 Deployment（自动匹配命名空间） |
+| `just logs <app> [lines] [ns]` | 实时跟踪查看指定应用 Pod 日志（默认 50 行，别名：`log`） |
+| `just ops [cmd] [args...]` | 集群运维入口（转发至 `scripts/cluster.sh`，默认：`status`） |
+| `just verify` | 深度核验集群内 17 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
+| `just view-secret [target] [key]` | 查看 Secret 明文（优先集群，断网自动回退至本地 master.key 离线解密，别名：`secret`） |
+| `just unseal [target] [key]` | 强制本地纯离线解密查看 Secret 明文（无需连接集群，别名：`decrypt`） |
+| `just fetch-kube [ip]` | 从远程 VPS 拉取并生成本地 `~/.kube/k3s-remote.yaml` |
 
 ---
 
@@ -187,7 +193,7 @@ Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
 Wave  3 : 05-authelia (SSO / 身份认证)
 Wave  4 : 06-meilisearch (搜索), 07-centrifugo (WebSocket 推送), 07-mosquitto (MQTT 代理)
-Wave  5 : 08-asynqmon, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector, 10-portainer
+Wave  5 : 02-storage-backup, 08-asynqmon, 09-imgproxy, 10-beszel, 10-dozzle, 10-gatus, 10-homepage, 10-openobserve, 10-otel-collector, 10-portainer
 Wave  6 : 20-bgin (自研业务后端负载)
 ```
 

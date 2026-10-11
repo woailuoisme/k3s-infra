@@ -49,7 +49,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: dozzle
@@ -63,7 +63,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: dozzle
-          image: amir20/dozzle:v11
+          image: amir20/dozzle:v11.3.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -80,6 +80,9 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
           livenessProbe:
             httpGet:
               path: /healthcheck
@@ -92,6 +95,10 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dozzle-data
 ---
 apiVersion: v1
 kind: Service

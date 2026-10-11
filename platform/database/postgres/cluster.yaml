@@ -47,7 +47,7 @@ spec:
       wal_compression: "lz4"
       max_wal_size: "512MB"
       checkpoint_timeout: "10min"
-      "cron.database_name": "postgres"
+      "cron.database_name": "bgin"
       "cron.timezone": "Asia/Shanghai"
       "pg_stat_statements.track": "all"
       random_page_cost: "1.1"
@@ -80,23 +80,22 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS postgis;
         - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
-  # 原生 Barman S3 持续流式 WAL 归档与备份配置
-  # 注：待镜像补齐 barman-cli-cloud 后取消下段注释即可无缝启用 Garage S3 备份
-  # backup:
-  #   barmanObjectStore:
-  #     destinationPath: "s3://postgres-backups/"
-  #     endpointURL: "http://garage.storage.svc:3900"
-  #     s3Credentials:
-  #       accessKeyId:
-  #         name: garage-s3-credentials
-  #         key: ACCESS_KEY_ID
-  #       secretAccessKey:
-  #         name: garage-s3-credentials
-  #         key: SECRET_ACCESS_KEY
-  #     wal:
-  #       compression: gzip
-  #       maxParallel: 1
-  #   retentionPolicy: "14d"
+  # 原生 Barman S3 持续流式 WAL 归档与备份配置 (基于 Garage S3)
+  backup:
+    barmanObjectStore:
+      destinationPath: "s3://postgres-backups/"
+      endpointURL: "http://garage.storage.svc:3900"
+      s3Credentials:
+        accessKeyId:
+          name: garage-s3-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: garage-s3-credentials
+          key: SECRET_ACCESS_KEY
+      wal:
+        compression: gzip
+        maxParallel: 1
+    retentionPolicy: "14d"
 
   monitoring:
     enablePodMonitor: false

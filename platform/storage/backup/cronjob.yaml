@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: storage-backup
+  namespace: storage
+  labels:
+    app.kubernetes.io/name: storage-backup
+    app.kubernetes.io/part-of: storage
+spec:
+  # 每天凌晨 03:00 执行全量增量同步
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: storage-backup
+            app.kubernetes.io/part-of: storage
+        spec:
+          restartPolicy: OnFailure
+          priorityClassName: platform-standard
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+            - key: node-role.kubernetes.io/master
+              operator: Exists
+              effect: NoSchedule
+          containers:
+            - name: rclone
+              image: rclone/rclone:1.69.1
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  echo "==> [$(date '+%Y-%m-%d %H:%M:%S')] 开始执行 K3s 持久卷底层异地同步..."
+                  if [ ! -f /config/rclone/rclone.conf ]; then
+                    echo "错误: 未找到 /config/rclone/rclone.conf 配置文件，请检查 rclone-backup-secret" >&2
+                    exit 1
+                  fi
+
+                  # 排除 Postgres 数据目录（由 CloudNativePG Barman WAL 机制独立接管热备）
+                  rclone sync /host-storage remote:k3s-storage-backup \
+                    --config=/config/rclone/rclone.conf \
+                    --exclude "database-postgres-cluster*/**" \
+                    --fast-list \
+                    --transfers=4 \
+                    --checkers=8 \
+                    --stats=30s \
+                    --verbose
+
+                  echo "==> [$(date '+%Y-%m-%d %H:%M:%S')] K3s 持久卷异地增量同步完成！"
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 32Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: host-storage
+                  mountPath: /host-storage
+                  readOnly: true
+                - name: rclone-config
+                  mountPath: /config/rclone
+                  readOnly: true
+          volumes:
+            - name: host-storage
+              hostPath:
+                path: /var/lib/rancher/k3s/storage
+                type: Directory
+            - name: rclone-config
+              secret:
+                secretName: rclone-backup-secret

@@ -1,0 +1,39 @@
+# ==============================================================================
+# imgproxy 官方 Helm Chart 配置 (https://helm.imgproxy.net/)
+# 针对 4C8G 单机 K3s 精简生产环境调优
+# ==============================================================================
+fullnameOverride: "imgproxy"
+
+image:
+  repo: ghcr.io/imgproxy/imgproxy
+  tag: v4.0.17
+  pullPolicy: IfNotPresent
+
+resources:
+  deployment:
+    priority:
+      name: platform-standard
+      level: 0
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+  service:
+    port: 8080
+  ingress:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  addSecrets:
+    - imgproxy-secrets
+
+env:
+  IMGPROXY_INSECURE_URLS: "true"
+  IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+  IMGPROXY_ENABLE_AVIF_DETECTION: "true"
+  IMGPROXY_PROMETHEUS_BIND: ":8081"

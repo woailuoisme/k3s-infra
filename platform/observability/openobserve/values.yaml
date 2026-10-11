@@ -19,7 +19,7 @@ priorityClassName: observability-low
 
 persistence:
   enabled: true
-  storageClassName: "local-path"
+  storageClass: "local-path"
   size: 2Gi
 
 config:

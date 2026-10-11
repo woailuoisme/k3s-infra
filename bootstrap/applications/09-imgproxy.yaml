@@ -4,15 +4,28 @@ metadata:
   name: 09-imgproxy
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/media/imgproxy
+  sources:
+    # 1. imgproxy 官方 Helm Chart (锁定 1.1.0 版本)
+    - repoURL: https://helm.imgproxy.net/
+      chart: imgproxy
+      targetRevision: 1.1.0
+      helm:
+        releaseName: imgproxy
+        valueFiles:
+          - $values/platform/media/imgproxy/values.yaml
+    # 2. 本 GitOps 仓库 (提供 Traefik IngressRoute 与 SealedSecret)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/media/imgproxy
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: media

@@ -32,7 +32,7 @@ render app="bgin":
 template app="bgin": (render app)
 
 # ------------------------------------------------------------------------------
-# 2. 声明式 GitOps 编排与集群运维 (Cluster Lifecycle)
+# 2. 声明式 GitOps 编排与集群运维 (GitOps & Cluster Operations)
 # ------------------------------------------------------------------------------
 
 # 引导启动或同步 ArgoCD 根应用 (App-of-Apps)
@@ -63,27 +63,21 @@ cap: capacity
 restart app ns="":
     @./scripts/cluster.sh restart "{{app}}" "{{ns}}"
 
-# 远程集群独立运维工具入口 (./scripts/remote-ops.sh)
-ops cmd="status" *args="":
-    @./scripts/remote-ops.sh "{{cmd}}" {{args}}
+# 查看应用实时日志 (例如: just logs bgin [lines] [namespace])
+logs app lines="50" ns="":
+    @./scripts/cluster.sh logs "{{app}}" "{{lines}}" "{{ns}}"
+log app lines="50" ns="": (logs app lines ns)
 
+# 远程集群运维入口 (转发至 scripts/cluster.sh, 支持所有子命令)
+ops cmd="status" *args="":
+    @./scripts/cluster.sh "{{cmd}}" {{args}}
 
 # 强制刷新并触发 ArgoCD 应用同步 (默认: 全量应用, 支持指定如: just sync bgin)
 sync app="":
     @./scripts/cluster.sh sync "{{app}}"
 refresh app="": (sync app)
 
-# 注入 Sealed Secrets 离线主私钥并触发全量自愈解密
-init-key key="$HOME/.config/sealed-secrets/master.key":
-    @./scripts/cluster.sh init-key "{{key}}"
-init-secrets key="$HOME/.config/sealed-secrets/master.key": (init-key key)
-
-# 验证集群端 Sealed Secrets 解密状态与 Secret 映射
-verify:
-    @./scripts/cluster.sh verify
-verify-secrets: verify
-
-# 部署或就地升级 ArgoCD (官方 Helm Chart 10.x)
+# 部署或就地升级 ArgoCD (官方 Helm Chart 10.10.2 / ArgoCD v3.5+)
 argocd:
     @./scripts/cluster.sh argocd
 install-argocd: argocd
@@ -98,18 +92,46 @@ ui:
     @echo "ArgoCD UI forwarding on https://localhost:8080 (Ctrl+C to stop)..."
     @kubectl port-forward svc/argocd-server -n argocd 8080:443
 
+# 初始化 Garage S3 单节点集群布局与业务桶 (首次部署后执行)
+init-garage:
+    @./scripts/cluster.sh init-garage
+
 # 导入预构建镜像到 K3s containerd
 import-image image="jiaoio/postgres:18-trixie":
     @./scripts/cluster.sh import-image "{{image}}"
 
 # ------------------------------------------------------------------------------
-# 3. 密钥安全与全局配置管理
+# 3. 密钥安全与全局配置管理 (Secrets & Global Configuration)
 # ------------------------------------------------------------------------------
 
 # 快速使用 Sealed Secrets 离线公钥加密明文 Secret 清单
 seal src dst:
     @kubeseal --cert platform/security/sealed-secrets/public-cert.pem --format yaml < "{{src}}" > "{{dst}}"
     @echo "Sealed {{src}} -> {{dst}} using offline public cert."
+
+# 验证集群端 Sealed Secrets 解密状态与 Secret 映射
+verify:
+    @./scripts/cluster.sh verify
+verify-secrets: verify
+
+# 查看已解密的 Secret 明文 (优先连接集群，集群未就绪/断网时自动降级为本地 master.key 离线解密)
+view-secret target="" key="":
+    @./scripts/cluster.sh view-secret "{{target}}" "{{key}}"
+secret target="" key="": (view-secret target key)
+
+# 强制本地纯离线解密查看 Secret (仅使用本地 master.key，无需连接集群)
+unseal target="" key="":
+    @OFFLINE=1 ./scripts/cluster.sh view-secret "{{target}}" "{{key}}"
+decrypt target="" key="": (unseal target key)
+
+# 注入 Sealed Secrets 离线主私钥并触发全量自愈解密
+init-key key="$HOME/.config/sealed-secrets/master.key":
+    @./scripts/cluster.sh init-key "{{key}}"
+init-secrets key="$HOME/.config/sealed-secrets/master.key": (init-key key)
+
+# 从 VPS 拉取生成远程 kubeconfig (~/.kube/k3s-remote.yaml)
+fetch-kube vps_ip="64.118.149.72":
+    @./scripts/cluster.sh fetch-kube "{{vps_ip}}"
 
 # 批量替换根域名并校验 (默认旧域名: haoxiaoguai.xyz)
 domain new_domain old_domain="haoxiaoguai.xyz":

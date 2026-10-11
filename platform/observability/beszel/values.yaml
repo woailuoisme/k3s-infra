@@ -1,0 +1,53 @@
+# ==============================================================================
+# Beszel Hub 官方 OCI Helm Chart 配置 (ghcr.io/henrygd/beszel-charts/beszel-hub)
+# 针对 4C8G 单机 K3s 精简生产环境调优
+# ==============================================================================
+fullnameOverride: "beszel"
+
+image:
+  repository: henrygd/beszel
+  tag: "0.21.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8090
+
+strategyType: Recreate
+
+persistentVolumeClaim:
+  enabled: true
+  existingClaim: "beszel-hub-data"
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: 8090
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: 8090
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  timeoutSeconds: 3
+
+ingress:
+  enabled: false
+
+httpRoute:
+  enabled: false
+
+autoscaling:
+  enabled: false

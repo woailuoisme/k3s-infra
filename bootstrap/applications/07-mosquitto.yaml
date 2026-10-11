@@ -4,15 +4,28 @@ metadata:
   name: 07-mosquitto
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "4"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/messaging/mosquitto
+  sources:
+    # 1. Quenchworks 官方加固 Mosquitto OCI Helm Chart (0-CVE, non-root, 锁定 0.0.8 版本)
+    - repoURL: ghcr.io/quenchworks/charts
+      chart: mosquitto
+      targetRevision: 0.0.8
+      helm:
+        releaseName: mosquitto
+        valueFiles:
+          - $values/platform/messaging/mosquitto/values.yaml
+    # 2. 本 GitOps 仓库 (提供 Traefik IngressRoute, ACL 与 SealedSecret)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/messaging/mosquitto
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: messaging
