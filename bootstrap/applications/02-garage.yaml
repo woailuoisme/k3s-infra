@@ -18,7 +18,7 @@ spec:
         releaseName: garage
         valueFiles:
           - $values/platform/storage/garage/values.yaml
-    # 2. 本 GitOps 仓库 (提供 WebUI, Traefik IngressRoute 与 SealedSecret)
+    # 2. 本 GitOps 仓库 (提供 WebUI, Traefik IngressRoute 与 ExternalSecret)
     - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       path: platform/storage/garage

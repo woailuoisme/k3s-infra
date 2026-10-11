@@ -1,0 +1,108 @@
+# ==============================================================================
+# OpenBao 生产轻量级单副本配置 (针对 4C8G 规格最小化定制)
+# ==============================================================================
+global:
+  enabled: true
+  tlsDisable: true
+
+server:
+  image:
+    registry: quay.io
+    repository: openbao/openbao
+    tag: v2.7.0
+  priorityClassName: edge-critical
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  dataStorage:
+    enabled: true
+    size: 2Gi
+    storageClass: local-path
+    mountPath: /openbao/data
+
+  ha:
+    enabled: true
+    replicas: 1
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+
+        storage "raft" {
+          path = "/openbao/data"
+        }
+
+        service_registration "kubernetes" {}
+
+  standalone:
+    enabled: false
+
+  # 注入轻量自动解封 Sidecar，保障 VPS 重启后无人值守自愈
+  extraContainers:
+    - name: auto-unseal-helper
+      image: curlimages/curl:8.12.1
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - |
+          echo "OpenBao auto-unseal helper started."
+          while true; do
+            if [ -f /vault/unseal/unseal-key ]; then
+              STATUS=$(curl -s http://127.0.0.1:8200/v1/sys/seal-status 2>/dev/null || true)
+              SEALED=$(echo "$STATUS" | grep -o '"sealed":true' || true)
+              INIT=$(echo "$STATUS" | grep -o '"initialized":true' || true)
+              if [ -n "$INIT" ] && [ -n "$SEALED" ]; then
+                KEY=$(cat /vault/unseal/unseal-key | tr -d ' \n\r')
+                if [ -n "$KEY" ]; then
+                  echo "OpenBao is sealed. Executing auto-unseal..."
+                  curl -s -X POST -d "{\"key\":\"$KEY\"}" http://127.0.0.1:8200/v1/sys/unseal > /dev/null 2>&1 || true
+                fi
+              fi
+            fi
+            sleep 5
+          done
+      volumeMounts:
+        - name: unseal-key
+          mountPath: /vault/unseal
+          readOnly: true
+      resources:
+        requests:
+          cpu: 5m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
+        capabilities:
+          drop:
+            - ALL
+
+  volumes:
+    - name: unseal-key
+      secret:
+        secretName: openbao-unseal-key
+        optional: true
+
+# 禁用无需使用的 Agent Injector 与 CSI 驱动，释放系统内存
+injector:
+  enabled: false
+
+csi:
+  enabled: false

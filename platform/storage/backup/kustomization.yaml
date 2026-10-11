@@ -5,4 +5,4 @@ namespace: storage
 
 resources:
   - cronjob.yaml
-  - sealed-secret.yaml
+  - external-secret.yaml

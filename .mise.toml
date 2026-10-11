@@ -12,9 +12,6 @@ gitleaks = "latest" # 密钥与敏感信息静态扫描
 trivy = "latest" # 容器与 K8s 清单安全合规与错配扫描器
 lefthook = "latest" # 极速 Git Hooks 管理器
 
-# --- 敏感机密声明式管理 ---
-kubeseal = "latest" # Bitnami Sealed Secrets 离线公钥加密 CLI
-
 # --- Kubernetes 核心与 GitOps 工具链 ---
 kubectl = "latest" # Kubernetes 官方命令行工具
 helm = "latest" # 云原生 Helm 包管理器

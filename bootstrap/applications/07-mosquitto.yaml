@@ -18,7 +18,7 @@ spec:
         releaseName: mosquitto
         valueFiles:
           - $values/platform/messaging/mosquitto/values.yaml
-    # 2. 本 GitOps 仓库 (提供 Traefik IngressRoute, ACL 与 SealedSecret)
+    # 2. 本 GitOps 仓库 (提供 Traefik IngressRoute, ACL 与 ExternalSecret)
     - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       path: platform/messaging/mosquitto

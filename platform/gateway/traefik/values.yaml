@@ -93,7 +93,7 @@ certificatesResolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"
 
-# 从 Secret 注入 Cloudflare API 凭证 (由 SealedSecret 解密生成)
+# 从 Secret 注入 Cloudflare API 凭证 (由 ExternalSecret 同步生成)
 env:
   - name: CF_DNS_API_TOKEN
     valueFrom:

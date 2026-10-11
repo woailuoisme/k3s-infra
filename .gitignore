@@ -11,13 +11,10 @@
 *.age
 *.pem
 *.crt
-# 白名单放行 Sealed Secrets 离线公钥证书
-!platform/security/sealed-secrets/public-cert.pem
 
 # 密钥文本与凭据导出
 *keys.txt
 *.keys.json
-.sealed-secrets-master.key
 iam/open-bao/.keys.json
 iam/open-bao/.approle-credentials.txt
 **/pgbouncer/userlist.txt
@@ -42,9 +39,13 @@ iam/open-bao/.approle-credentials.txt
 .env.*
 !.env.example
 /.env
+.secrets.env
+.secrets.env.*
+!.secrets.env.example
 /logs/
 /data/
 /backup/
+.tmp/
 
 # 证书工具与域名配置
 cloudflare.ini

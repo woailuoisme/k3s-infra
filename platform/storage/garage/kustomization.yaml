@@ -4,6 +4,6 @@ kind: Kustomization
 namespace: storage
 
 resources:
-  - sealed-secret.yaml
+  - external-secret.yaml
   - webui.yaml
   - ingressroute.yaml

@@ -18,7 +18,7 @@ spec:
         releaseName: portainer
         valueFiles:
           - $values/platform/observability/portainer/values.yaml
-    # 2. 本 GitOps 仓库 (提供本地 SealedSecret 与 Traefik IngressRoute)
+    # 2. 本 GitOps 仓库 (提供本地 ExternalSecret 与 Traefik IngressRoute)
     - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       path: platform/observability/portainer

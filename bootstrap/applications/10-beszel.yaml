@@ -18,7 +18,7 @@ spec:
         releaseName: beszel
         valueFiles:
           - $values/platform/observability/beszel/values.yaml
-    # 2. 本 GitOps 仓库 (提供 Agent DaemonSet, PVC, IngressRoute 与 SealedSecret)
+    # 2. 本 GitOps 仓库 (提供 Agent DaemonSet, PVC, IngressRoute 与 ExternalSecret)
     - repoURL: https://github.com/woailuoisme/k3s-infra.git
       targetRevision: main
       path: platform/observability/beszel

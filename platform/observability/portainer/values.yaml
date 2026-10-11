@@ -47,6 +47,6 @@ trusted_origins:
   enabled: true
   domains: "portainer.mso.lol"
 
-# 声明式初始管理员凭证注入 (绑定本地 SealedSecret，启动即锁定管理员账号)
+# 声明式初始管理员凭证注入 (绑定本地 ExternalSecret，启动即锁定管理员账号)
 adminPassword:
   existingSecret: "portainer-admin-password"

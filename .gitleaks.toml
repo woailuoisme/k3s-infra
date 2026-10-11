@@ -9,5 +9,6 @@ paths = [
   '''(?i).*sealed.*\.ya?ml$''',
   '''(?i)platform/security/sealed-secrets/public-cert\.pem$''',
   '''(?i).*\.example$''',
+  '''(?i)\.secrets\.env$''',
   '''(?i)docs/.*''',
 ]

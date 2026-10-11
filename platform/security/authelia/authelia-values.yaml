@@ -94,6 +94,6 @@ configMap:
         subject:
           - "group:admin"
 
-# 敏感密钥绑定集群内部 Secret (由 SealedSecret 解密注入)
+# 敏感密钥绑定集群内部 Secret (由 ExternalSecret 同步生成)
 secret:
   existingSecret: authelia-secret

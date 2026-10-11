@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - ingressroute.yaml
   - acl-configmap.yaml
-  - sealed-secret.yaml
+  - external-secret.yaml

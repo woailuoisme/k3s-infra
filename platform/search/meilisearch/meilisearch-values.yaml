@@ -20,7 +20,7 @@ persistence:
   storageClass: "local-path"
   size: 10Gi
 
-# 鉴权凭证绑定外部 Secret (SealedSecret 声明式管理)
+# 鉴权凭证绑定外部 Secret (ExternalSecret 声明式管理)
 auth:
   existingMasterKeySecret: "meilisearch-master-key"
 

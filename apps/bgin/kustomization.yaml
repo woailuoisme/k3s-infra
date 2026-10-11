@@ -6,7 +6,7 @@ namespace: apps
 resources:
   - pvc.yaml
   - configmap.yaml
-  - sealed-secret.yaml
+  - external-secret.yaml
   - api-deployment.yaml
   - worker-deployment.yaml
   - service.yaml

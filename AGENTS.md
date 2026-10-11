@@ -26,7 +26,7 @@
   - **多媒体处理**：Imgproxy（高性能动态图片即时缩放与格式转换）。
   - **全栈可观测性**：Dozzle（轻量容器实时日志流查看器），OpenObserve（日志、指标、链路追踪三合一轻量平台），OpenTelemetry Collector（全集群遥测指标采集与转发代理）。
   - **业务核心服务**：`apps/bgin`（Go/Gin 高性能 REST API + Asynq 异步后台队列消费者）。
-- **敏感机密管理**：Sealed Secrets（RSA 4096 离线公钥加密，原生 CRD 声明式存管，解密控制器常驻约 20MB 内存，ArgoCD 原生识别、零插件依赖）。
+  - **敏感机密管理**：OpenBao（开源安全密钥保管库，单节点 Raft 本地持久化，内置 auto-unseal sidecar 自动化解封）+ External Secrets Operator (ESO)（统一声明式 ExternalSecret 同步至原生 Kubernetes Secret，支持动态生命周期与自动轮转）。
 
 ---
 
@@ -47,7 +47,11 @@ k3s-infra/
 │   ├── storage/garage/      # Garage S3 部署清单与自动化初始化 Job
 │   ├── database/postgres/   # CloudNativePG 数据库集群配置与声明式初始化 SQL
 │   ├── cache/valkey/        # Valkey 缓存部署与资源限额
-│   ├── security/            # Authelia, CrowdSec 安全与权限配置
+│   ├── security/            # Authelia, CrowdSec, OpenBao, External Secrets 配置
+│   │   ├── authelia/        # Authelia SSO 清单
+│   │   ├── crowdsec/        # CrowdSec 入侵防御
+│   │   ├── external-secrets/# ESO Helm Values 与 ClusterSecretStore
+│   │   └── openbao/         # OpenBao Raft Helm Values 与 Auto-Unseal
 │   ├── search/meilisearch/  # Meilisearch 搜索引擎清单
 │   ├── messaging/           # Centrifugo, Mosquitto 消息中间件
 │   ├── workflows/           # Asynqmon 异步任务队列监控面板
@@ -57,7 +61,6 @@ k3s-infra/
 ├── justfile                 # 项目核心工作流与运维任务运行器
 ├── lefthook.yml             # 本地 Git 提交/推送前自动化检查钩子
 ├── .mise.toml               # 统一工具链依赖与版本管理声明 (just, kubectl, helm, linters)
-├── platform/security/sealed-secrets/ # Sealed Secrets 离线公钥证书 (public-cert.pem)
 └── AGENTS.md                # AI 编程助手专属上下文与规范指南 (本文档)
 ```
 
@@ -79,7 +82,6 @@ lefthook install
 
 - `just`：自动化任务运行器（对应根目录 [`justfile`](file:///Users/seaside/Projects/devops/k3s/k3s-infra/justfile)）。
 - `kubectl` 与 `helm`：Kubernetes 集群交互与 Helm 包管理器。
-- `kubeseal`：Bitnami Sealed Secrets 离线公钥加密 CLI。
 - `kubectl-cnpg`：CloudNativePG 官方 CLI 插件（数据库状态、物理全备与主从切换运维）。
 - `yamllint`：YAML 文件静态语法与缩进格式校验。
 - `kubeconform`：纯离线高性能 Kubernetes 清单 OpenAPI 模式校验器。
@@ -115,9 +117,9 @@ lefthook install
 | `just restart <app> [ns]` | 滚动重启指定应用 Deployment（自动匹配命名空间） |
 | `just logs <app> [lines] [ns]` | 实时跟踪查看指定应用 Pod 日志（默认 50 行，别名：`log`） |
 | `just ops [cmd] [args...]` | 集群运维入口（转发至 `scripts/cluster.sh`，默认：`status`） |
-| `just verify` | 深度核验集群内 17 个 Sealed Secrets 的解密及标准 Secret 映射状态（别名：`verify-secrets`） |
-| `just view-secret [target] [key]` | 查看 Secret 明文（优先集群，断网自动回退至本地 master.key 离线解密，别名：`secret`） |
-| `just unseal [target] [key]` | 强制本地纯离线解密查看 Secret 明文（无需连接集群，别名：`decrypt`） |
+| `just init-bao` | 初始化 OpenBao，生成 auto-unseal Secret，启用 KV v2 与 K8s 鉴权并配置 ESO RBAC 策略 |
+| `just bao-sync [target] [file]` | 批量或指定组件从本地 `.secrets.env` 同步机密至 OpenBao 并立即触发 ESO 生效 |
+| `just bao-ui` | 本地端口转发快速访问 OpenBao 控制台（8200 端口） |
 | `just fetch-kube [ip]` | 从远程 VPS 拉取并生成本地 `~/.kube/k3s-remote.yaml` |
 
 ---
@@ -187,7 +189,7 @@ GitHub Actions 流水线 [`.github/workflows/gitops-ci.yml`](file:///Users/seasi
 `bootstrap/applications/` 目录下的所有 ArgoCD Application 均须配置 `argocd.argoproj.io/sync-wave` 注解，按依赖层级梯度启动，彻底规避 4C8G 规格下的启动内存瞬时洪峰：
 
 ```text
-Wave -1 : 00-namespaces (命名空间、PriorityClass、LimitRange), 00-sealed-secrets (解密控制器)
+Wave -1 : 00-namespaces (命名空间、PriorityClass、LimitRange), 00-openbao (密钥仓库), 00-external-secrets (密钥同步 Operator)
 Wave  0 : 01-traefik (边缘网关), 02-garage (S3 对象存储底层)
 Wave  1 : 03-cnpg-operator (数据库控制器), 04-valkey (内存缓存层)
 Wave  2 : 03-postgres-cluster (HA 核心数据库), 05-crowdsec (协同安全防御)
@@ -206,7 +208,7 @@ Wave  6 : 20-bgin (自研业务后端负载)
 - `resources.requests`：服务正常运行所需的最低内存与 CPU 资源。
 - `resources.limits`：防止内存泄漏击穿节点的上限硬限制。
 - `priorityClassName`：
-  - `edge-critical`：核心基础设施与数据持久层（Traefik、Mosquitto、PostgreSQL、ArgoCD）。
+  - `edge-critical`：核心基础设施与数据持久层（Traefik、Mosquitto、PostgreSQL、ArgoCD、OpenBao）。
   - `platform-standard`：通用业务与平台中间件（Valkey、Centrifugo、bgin、Garage S3、CrowdSec、Authelia）。
   - `observability-low`：可观测性与辅助运维组件（Beszel、Dozzle、Gatus、Homepage、OpenObserve、OTel Collector）。
   - *(未显式声明的临时 Pod 默认落入最低 0 级，在内存受压时最优先被抢占让渡)*
@@ -214,9 +216,14 @@ Wave  6 : 20-bgin (自研业务后端负载)
 ### 6.5 密钥安全与敏感数据治理
 
 - **严禁**将明文密码、API Token 或敏感证书提交至 Git 仓库。
-- 敏感 Secret 清单必须通过 Sealed Secrets 转换为标准的 `SealedSecret` CRD（`*.sealed.yaml` 或 `sealed-secret.yaml`）。
-- 使用 `platform/security/sealed-secrets/public-cert.pem` 离线公钥证书进行加密，解密主私钥离库离线安全存管。
-- 集群运行时由 `sealed-secrets-controller` 自动解密生成标准 Kubernetes Secret，ArgoCD 零插件负担、原生识别与同步。
+- **声明式机密工作流 (OpenBao + ESO)**：
+  - 平台采用 **OpenBao** 作为核心凭据仓库，使用单副本 Raft 嵌入式存储并挂载 `local-path` PVC (2Gi) 持久化。
+  - 集群部署 **External Secrets Operator (ESO)**，通过全局 `ClusterSecretStore` (`openbao-backend`) 借助 Kubernetes ServiceAccount TokenRequest 原生鉴权连接 OpenBao。
+  - 各应用与平台组件通过声明式 `ExternalSecret`（`external-secret.yaml`）从 OpenBao 的 KV v2 引擎（挂载于 `secret/`，路径约定为 `<namespace>/<secret-name>`）按需同步生成标准的 Kubernetes Secret。
+  - **边缘 VPS 自动解封自愈**：OpenBao 实例搭载 `auto-unseal-helper` sidecar 容器，启动时自动读取 Secret `openbao-unseal-key` 执行解封，VPS 重启零人工介入。
+- **单文件声明式机密工作流 (.secrets.env)**：
+  - 本地维护单一 `.secrets.env` 文件（由模版 `.secrets.env.example` 复制生成，已被 Git 严格忽略）。
+  - 执行 `just bao-sync` 即可一键增量同步全量机密至 OpenBao，并自动触发对应 ExternalSecret 秒级刷新为 Kubernetes Secret，全生命周期 Git 仓库零 Secret 明文存储。
 
 ---
 

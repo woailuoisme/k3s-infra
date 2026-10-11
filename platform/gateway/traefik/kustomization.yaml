@@ -5,4 +5,4 @@ namespace: traefik
 
 resources:
   - middlewares.yaml
-  - sealed-secret.yaml
+  - external-secret.yaml

@@ -1,0 +1,43 @@
+# ==============================================================================
+# External Secrets Operator (ESO) 生产精简配置 (针对 4C8G 规格最小化定制)
+# ==============================================================================
+installCRDs: true
+replicaCount: 1
+priorityClassName: edge-critical
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 48Mi
+  limits:
+    cpu: 100m
+    memory: 96Mi
+
+certController:
+  create: true
+  replicaCount: 1
+  priorityClassName: edge-critical
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      cpu: 50m
+      memory: 48Mi
+
+webhook:
+  create: true
+  replicaCount: 1
+  priorityClassName: edge-critical
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      cpu: 50m
+      memory: 48Mi
+
+# 开启 Vault Token 内存缓存，避免频繁向 OpenBao 发起认证请求
+vault:
+  enableTokenCache: true
+  tokenCacheSize: 1024
