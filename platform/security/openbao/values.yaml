@@ -9,7 +9,7 @@ server:
   image:
     registry: quay.io
     repository: openbao/openbao
-    tag: v2.7.0
+    tag: "2.7.0"
   priorityClassName: edge-critical
   resources:
     requests:

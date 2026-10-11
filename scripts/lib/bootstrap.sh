@@ -3,6 +3,18 @@
 set -euo pipefail
 
 cmd_argocd() {
+	if ! kubectl get priorityclass edge-critical > /dev/null 2>&1; then
+		echo "--> Applying PriorityClasses for ArgoCD..."
+		kubectl apply -f platform/core/priority-classes.yaml
+	fi
+
+	if ! kubectl get crd ingressroutes.traefik.io > /dev/null 2>&1; then
+		echo "--> Installing Traefik CRDs for ArgoCD IngressRoute..."
+		helm repo add traefik https://traefik.github.io/charts > /dev/null 2>&1 || true
+		helm repo update traefik > /dev/null 2>&1 || true
+		helm show crds traefik/traefik | kubectl apply -f -
+	fi
+
 	helm repo add argo https://argoproj.github.io/argo-helm > /dev/null 2>&1 || true
 	helm repo update argo
 	helm upgrade --install argocd argo/argo-cd \
