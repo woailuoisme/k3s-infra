@@ -31,7 +31,6 @@ persistence:
   storageClass: "local-path"
   accessModes:
     - ReadWriteOnce
-  existingClaim: "mosquitto-mosquitto-data"
 
 service:
   type: ClusterIP
