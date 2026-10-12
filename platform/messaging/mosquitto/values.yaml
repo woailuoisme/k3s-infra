@@ -3,7 +3,7 @@
 # 针对 4C8G 单机 K3s 调优，0-CVE 无根容器，只读文件系统
 # ==============================================================================
 
-nameOverride: "mosquitto"
+fullnameOverride: "mosquitto"
 
 image:
   repository: eclipse-mosquitto
@@ -31,6 +31,7 @@ persistence:
   storageClass: "local-path"
   accessModes:
     - ReadWriteOnce
+  existingClaim: "mosquitto-mosquitto-data"
 
 service:
   type: ClusterIP

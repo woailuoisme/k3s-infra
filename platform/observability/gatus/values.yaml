@@ -133,7 +133,7 @@ config:
     # --- 实时通信与任务调度 (Messaging & Workflows) ---
     - name: Centrifugo Realtime
       group: Messaging
-      url: "http://centrifugo.messaging.svc:8000/health"
+      url: "http://centrifugo.messaging.svc:9000/health"
       interval: 30s
       conditions:
         - "[STATUS] == 200"
@@ -162,7 +162,7 @@ config:
 
     - name: imgproxy
       group: Search
-      url: "http://imgproxy.media.svc:8080/healthz"
+      url: "http://imgproxy.media.svc:8080/health"
       interval: 30s
       conditions:
         - "[STATUS] == 200"
@@ -170,10 +170,10 @@ config:
     # --- 业务服务与外部网络 (Apps & Network) ---
     - name: Bgin API
       group: Apps
-      url: "tcp://bgin-api.apps.svc:3300"
+      url: "http://bgin-api.apps.svc:3300/livez"
       interval: 30s
       conditions:
-        - "[CONNECTED] == true"
+        - "[STATUS] == 200"
 
     - name: Core DNS (Cloudflare)
       group: Network

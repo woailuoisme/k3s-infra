@@ -247,7 +247,7 @@ config:
             icon: golang
             href: https://api.{{HOMEPAGE_VAR_SITE_ADDRESS}}
             description: 核心业务 REST API 服务
-            siteMonitor: http://bgin-api.apps.svc:3300/
+            siteMonitor: http://bgin-api.apps.svc:3300/livez
 
   kubernetes:
     mode: cluster
