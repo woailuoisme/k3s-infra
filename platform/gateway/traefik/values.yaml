@@ -2,6 +2,12 @@
 # Traefik v3 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
 # ==============================================================================
 
+image:
+  registry: docker.io
+  repository: traefik
+  tag: "v3.7.14"
+  pullPolicy: IfNotPresent
+
 deployment:
   replicas: 1
 

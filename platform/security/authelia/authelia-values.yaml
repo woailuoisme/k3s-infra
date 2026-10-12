@@ -3,6 +3,12 @@
 # 采用本地 SQLite3 + 加密 Cookie 会话，零外部数据库依赖 (无 Postgres / Redis 依赖)
 # ==============================================================================
 
+image:
+  registry: "ghcr.io"
+  repository: "authelia/authelia"
+  tag: "4.39.24"
+  pullPolicy: IfNotPresent
+
 pod:
   kind: "Deployment"
   replicas: 1

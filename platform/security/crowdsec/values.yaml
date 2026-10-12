@@ -3,6 +3,15 @@
 # ==============================================================================
 fullnameOverride: "crowdsec"
 
+image:
+  repository: crowdsecurity/crowdsec
+  tag: "v1.8.1"
+  pullPolicy: IfNotPresent
+  kubectl:
+    repository: bitnami/kubectl
+    tag: "1.32.2"
+    pullPolicy: IfNotPresent
+
 agent:
   enabled: false
 

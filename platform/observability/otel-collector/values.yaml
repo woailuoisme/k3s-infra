@@ -6,6 +6,8 @@ fullnameOverride: "otel-collector"
 
 image:
   repository: "otel/opentelemetry-collector-contrib"
+  tag: "0.161.0"
+  pullPolicy: IfNotPresent
 
 priorityClassName: "observability-low"
 

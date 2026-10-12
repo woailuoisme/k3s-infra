@@ -2,6 +2,11 @@
 # Meilisearch 官方 Helm Chart 调优配置 (适用于 4C8G 单机 K3s)
 # ==============================================================================
 
+image:
+  repository: getmeili/meilisearch
+  tag: "v1.54.0"
+  pullPolicy: IfNotPresent
+
 replicaCount: 1
 
 priorityClassName: "platform-standard"
