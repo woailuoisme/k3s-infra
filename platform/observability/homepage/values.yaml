@@ -156,7 +156,7 @@ config:
             icon: traefik
             href: https://gateway.{{HOMEPAGE_VAR_SITE_ADDRESS}}/dashboard/
             description: Traefik v3 云原生边缘网关
-            siteMonitor: http://traefik.traefik.svc:80
+            siteMonitor: http://traefik.traefik.svc:9000/ping
         - Authelia:
             icon: authelia
             href: https://auth.{{HOMEPAGE_VAR_SITE_ADDRESS}}

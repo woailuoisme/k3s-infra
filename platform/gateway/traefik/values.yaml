@@ -27,10 +27,22 @@ resources:
     cpu: 500m
     memory: 150Mi
 
+# 静态参数：开启原生 ping 健康检查端点
+additionalArguments:
+  - "--ping=true"
+
 # ------------------------------------------------------------------------------
 # 端口与入口点配置 (EntryPoints)
 # ------------------------------------------------------------------------------
 ports:
+  # 内部管理与健康检查端点 (提供 /ping 健康检查状态，仅限集群内部 Service 访问)
+  traefik:
+    port: 9000
+    expose:
+      default: true
+    exposedPort: 9000
+    protocol: TCP
+
   # HTTP 入口 (默认 301 永久重定向至 HTTPS)
   web:
     port: 80
