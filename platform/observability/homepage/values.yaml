@@ -1,0 +1,255 @@
+# yaml-language-server: $schema=none
+# ==============================================================================
+# Homepage Dashboard Helm Values (QuenchWorks OCI Chart)
+# ==============================================================================
+
+fullnameOverride: homepage
+replicaCount: 1
+
+priorityClassName: observability-low
+
+allowedHosts:
+  - "*"
+
+rbac:
+  create: true
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+extraEnvVars:
+  - name: HOMEPAGE_VAR_SITE_ADDRESS
+    value: "mso.lol"
+  - name: HOMEPAGE_VAR_DOMAIN
+    value: "mso.lol"
+  - name: LOG_TARGETS
+    value: "stdout"
+
+config:
+  settings:
+    title: "K3s 基础设施与服务导航"
+    description: "云原生容器服务与运维管理中枢"
+    favicon: https://cdn.jsdelivr.net/gh/selfhst/icons/webp/homepage.webp
+    theme: dark
+    color: zinc
+    language: zh-CN
+    cardBlur: sm
+    iconStyle: theme
+    headerStyle: boxedWidgets
+    hideVersion: true
+    target: _blank
+    showStats: true
+    statusStyle: "dot"
+    hideErrors: true
+    useEqualHeights: true
+    maxGroupColumns: 4
+    layout:
+      网关与安全:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-shield-lock-outline
+      统一观测与运维:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-chart-timeline-variant-shimmer
+      存储与数据库:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-database-outline
+      通信与工作流:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-message-processing-outline
+      检索与处理:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-magnify-scan
+      业务服务:
+        style: row
+        columns: 4
+        useEqualHeights: true
+        icon: mdi-application-brackets-outline
+
+  widgets:
+    - greeting:
+        text_size: 2xl
+        text: "欢迎回来"
+    - search:
+        provider: duckduckgo
+        target: _blank
+        focus: false
+        showSearchSuggestions: true
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: long
+          hourCycle: h24
+        locale: zh-CN
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showNodes: true
+    - openmeteo:
+        label: Dongguan
+        latitude: 23.018
+        longitude: 113.7487
+        timezone: Asia/Shanghai
+        units: metric
+        cache: 30
+        format:
+          maximumFractionDigits: 1
+
+  bookmarks:
+    - 云原生与网关:
+        - Traefik:
+            - abbr: TF
+              href: https://doc.traefik.io/traefik/
+        - K3s:
+            - abbr: K3
+              href: https://docs.k3s.io/
+        - Authelia:
+            - abbr: AU
+              href: https://www.authelia.com/overview/prologue/introduction/
+    - 数据与可观测性:
+        - PostgreSQL:
+            - abbr: PG
+              href: https://www.postgresql.org/docs/
+        - OpenObserve:
+            - abbr: OO
+              href: https://openobserve.ai/docs/
+        - Gatus:
+            - abbr: GT
+              href: https://gatus.io/
+        - Beszel:
+            - abbr: BZ
+              href: https://beszel.dev/
+    - 开发者平台:
+        - GitHub:
+            - abbr: GH
+              href: https://github.com/
+        - Docker Hub:
+            - abbr: DH
+              href: https://hub.docker.com/
+
+  services:
+    - 网关与安全:
+        - Traefik:
+            icon: traefik
+            href: https://gateway.{{HOMEPAGE_VAR_SITE_ADDRESS}}/dashboard/
+            description: Traefik v3 云原生边缘网关
+            ping: http://traefik.traefik.svc:80
+        - Authelia:
+            icon: authelia
+            href: https://auth.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: SSO 单点登录与 2FA 认证门户
+            ping: http://authelia.security.svc:9091/api/health
+        - CrowdSec:
+            icon: crowdsec
+            description: 行为分析与入侵防御 WAF 引擎
+            ping: tcp://crowdsec-service.security.svc:8080
+
+    - 统一观测与运维:
+        - Homepage:
+            icon: homepage
+            href: https://home.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 统一运维服务导航面板
+            ping: http://homepage.observability.svc:3000
+        - Gatus:
+            icon: gatus
+            href: https://status.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 自动化服务健康与状态监控
+            widget:
+              type: gatus
+              url: http://gatus.observability.svc:8080
+        - Beszel:
+            icon: beszel
+            href: https://beszel.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 服务器硬件与容器指标监控
+            ping: http://beszel.observability.svc:8090/api/health
+        - Dozzle:
+            icon: dozzle
+            href: https://logs.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 容器与 Pod 日志实时流式查看器
+            ping: http://dozzle.observability.svc:8080/healthcheck
+        - OpenObserve:
+            icon: sh-openobserve
+            href: https://observe.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 云原生日志、指标与链路追踪平台
+            ping: http://openobserve.observability.svc:5080/healthz
+        - OTel Collector:
+            icon: si-opentelemetry
+            description: OpenTelemetry 遥测数据采集管道
+        - Portainer:
+            icon: portainer
+            href: https://portainer.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 云原生轻量级可视化与排错面板
+            ping: http://portainer.observability.svc:9000/api/system/status
+
+    - 存储与数据库:
+        - PostgreSQL:
+            icon: postgresql
+            description: CloudNativePG 18 HA 核心数据库
+            ping: tcp://postgres-cluster-rw.database.svc:5432
+        - Valkey:
+            icon: redis
+            description: Valkey 8.0 高性能内存缓存与分布式锁
+            ping: tcp://valkey-primary.database.svc:6379
+        - Garage S3:
+            icon: garage
+            href: https://storage-ui.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 分布式轻量 S3 对象存储控制台
+            ping: tcp://garage.storage.svc:3900
+
+    - 通信与工作流:
+        - Centrifugo:
+            icon: mdi-broadcast
+            href: https://realtime.{{HOMEPAGE_VAR_SITE_ADDRESS}}/admin
+            description: 实时 WebSocket / SSE 广播引擎
+            ping: http://centrifugo.messaging.svc:8000/health
+        - Mosquitto:
+            icon: sh-mosquitto
+            description: MQTT 物联网消息 Broker
+            ping: tcp://mosquitto.messaging.svc:1883
+        - Asynqmon:
+            icon: mdi-tray-full
+            href: https://queue.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: Asynq 异步任务队列 Web 监控看板
+            ping: http://asynqmon.workflows.svc:8080
+
+    - 检索与处理:
+        - Meilisearch:
+            icon: meilisearch
+            href: https://search.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 高性能轻量全文搜索引擎
+            ping: http://meilisearch.search.svc:7700/health
+        - imgproxy:
+            icon: mdi-image-auto-adjust
+            href: https://img.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 安全动态图片缩放与裁剪渲染
+            ping: http://imgproxy.media.svc:8080/healthz
+
+    - 业务服务:
+        - bgin-api:
+            icon: golang
+            href: https://api.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+            description: 核心业务 REST API 服务
+            ping: tcp://bgin-api.apps.svc:3300
+
+  kubernetes:
+    mode: cluster
+  docker: {}
+  customCss: ""
+  customJs: ""

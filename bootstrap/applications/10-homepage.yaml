@@ -9,10 +9,23 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/woailuoisme/k3s-infra.git
-    targetRevision: main
-    path: platform/observability/homepage
+  sources:
+    # 1. Homepage 官方加固 OCI Helm Chart (QuenchWorks, 锁定 0.0.9 版本)
+    - repoURL: ghcr.io/quenchworks/charts
+      chart: homepage
+      targetRevision: 0.0.9
+      helm:
+        releaseName: homepage
+        valueFiles:
+          - $values/platform/observability/homepage/values.yaml
+    # 2. 本 GitOps 仓库 (提供 Traefik IngressRoute 边缘路由)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      path: platform/observability/homepage
+    # 3. 本 GitOps 仓库 (提供本地 values.yaml)
+    - repoURL: https://github.com/woailuoisme/k3s-infra.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
