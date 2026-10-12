@@ -4,6 +4,16 @@
 
 architecture: standalone
 
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: valkey/valkey
+  tag: 9.1-alpine
+  pullPolicy: IfNotPresent
+
 auth:
   enabled: true
   existingSecret: valkey-secret
@@ -30,6 +40,50 @@ extraDeploy:
 
 primary:
   priorityClassName: "platform-standard"
+  command:
+    - /bin/sh
+  args:
+    - -c
+    - |
+      PASS=$(cat /opt/bitnami/valkey/secrets/valkey-password 2>/dev/null)
+      exec valkey-server \
+        --port 6379 \
+        --requirepass "$PASS" \
+        --include /opt/bitnami/valkey/mounted-etc/valkey.conf \
+        --include /opt/bitnami/valkey/mounted-etc/primary.conf
+
+  customLivenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 5
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - |
+          PASS=$(cat /opt/bitnami/valkey/secrets/valkey-password 2>/dev/null)
+          export REDISCLI_AUTH="$PASS"
+          response=$(valkey-cli -p 6379 ping)
+          [ "$response" = "PONG" ]
+
+  customReadinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 5
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - |
+          PASS=$(cat /opt/bitnami/valkey/secrets/valkey-password 2>/dev/null)
+          export REDISCLI_AUTH="$PASS"
+          response=$(valkey-cli -p 6379 ping)
+          [ "$response" = "PONG" ]
+
   resources:
     requests:
       cpu: 50m
