@@ -9,7 +9,7 @@ default:
 # ------------------------------------------------------------------------------
 
 # 运行全量静态检测门禁 (YAML, Kustomize, Schema, Helm, Gitleaks)
-check: _lint-k8s _lint-kustomize _lint-schema _lint-helm _lint-secrets
+check: _lint-k8s _lint-kustomize-schema _lint-helm _lint-secrets
 lint: check
 validate: check
 
@@ -122,15 +122,8 @@ repo new_repo old_repo="https://github.com/woailuoisme/k3s-infra.git":
 _lint-k8s:
     @yamllint -d "{extends: relaxed, rules: {line-length: {max: 300}}}" bootstrap/ platform/ apps/
 
-_lint-kustomize:
-    @find apps platform bootstrap -name "kustomization.yaml" -exec dirname {} \; | sort -u | while read -r dir; do \
-        kubectl kustomize "$dir" > /dev/null || exit 1; \
-    done
-
-_lint-schema:
-    @find apps platform bootstrap -name "kustomization.yaml" -exec dirname {} \; | sort -u | while read -r dir; do \
-        kubectl kustomize "$dir" | kubeconform -summary -ignore-missing-schemas -insecure-skip-tls-verify > /dev/null || exit 1; \
-    done
+_lint-kustomize-schema:
+    @find apps platform bootstrap -name "kustomization.yaml" -exec dirname {} \; | sort -u | xargs -n 1 -P 4 -I {} bash -c 'set -o pipefail; kubectl kustomize "{}" | kubeconform -summary -ignore-missing-schemas -insecure-skip-tls-verify > /dev/null'
 
 _lint-helm:
     @if find apps platform -name "Chart.yaml" -maxdepth 3 2>/dev/null | grep -q .; then \

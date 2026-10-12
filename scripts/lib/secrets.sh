@@ -325,8 +325,17 @@ cmd_bao_sync() {
 			if [[ "$v" =~ ^\"(.*)\"$ ]]; then
 				v="${BASH_REMATCH[1]}"
 				v="$(printf '%b' "$v")"
+				v="${v//\\\"/\"}"
 			elif [[ "$v" =~ ^\'(.*)\'$ ]]; then
 				v="${BASH_REMATCH[1]}"
+			else
+				# 裸值安全性检测
+				if [[ "$v" == *" "* ]]; then
+					echo "    [Warning] Key '$k' has unquoted spaces in value. Wrap in single quotes '' if unintended." >&2
+				fi
+				if [[ "$v" == *"#"* ]]; then
+					echo "    [Warning] Key '$k' contains '#' without quotes. Wrap in single quotes '' to prevent ambiguity." >&2
+				fi
 			fi
 
 			kv_pairs+=("$k=$v")

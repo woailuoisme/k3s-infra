@@ -63,7 +63,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: dozzle
-          image: amir20/dozzle:v11.3.0
+          image: amir20/dozzle:v11
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

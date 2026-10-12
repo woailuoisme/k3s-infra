@@ -6,7 +6,7 @@ pre-commit:
 
     validate-k8s:
       glob: "{apps,platform,bootstrap}/**/*.{yaml,yml}"
-      run: just validate
+      run: ./scripts/lint-staged-k8s.sh {staged_files}
 
     shell:
       glob: "**/*.sh"
